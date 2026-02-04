@@ -1,0 +1,219 @@
+.ingestion-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 4, 15, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    backdrop-filter: blur(8px);
+}
+
+.ingestion-modal {
+    background: var(--bg-app);
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    width: 90%;
+    max-width: 500px;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    overflow: hidden;
+    animation: modalSlideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(30px) scale(0.95);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.ingestion-header {
+    padding: 24px 32px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.ingestion-header h3 {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: var(--text-main);
+}
+
+.close-btn {
+    background: var(--bg-surface);
+    border: none;
+    font-size: 20px;
+    color: var(--text-muted);
+    cursor: pointer;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.close-btn:hover {
+    background: var(--bg-card);
+    color: var(--text-main);
+}
+
+.ingestion-content {
+    padding: 32px;
+}
+
+.processing-state {
+    text-align: center;
+    padding: 20px 0;
+}
+
+.step-indicator {
+    margin-top: 16px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-ice-blue);
+    background: rgba(15, 82, 186, 0.2);
+    padding: 10px 20px;
+    border-radius: 30px;
+    display: inline-block;
+    border: 1px solid var(--border-glow);
+}
+
+.complete-state,
+.error-state {
+    text-align: center;
+}
+
+.success-icon {
+    font-size: 56px;
+    margin-bottom: 24px;
+    filter: drop-shadow(0 0 15px #10b981);
+}
+
+.error-icon {
+    font-size: 56px;
+    margin-bottom: 24px;
+    filter: drop-shadow(0 0 15px #ef4444);
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+    margin: 32px 0;
+}
+
+.stat-item {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    padding: 16px;
+    border-radius: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    transition: all 0.2s;
+}
+
+.stat-item:hover {
+    border-color: var(--color-powder-blue);
+    background: var(--bg-card);
+}
+
+.stat-label {
+    font-size: 10px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-weight: 700;
+}
+
+.stat-value {
+    font-size: 24px;
+    font-weight: 800;
+    color: var(--text-main);
+}
+
+.stat-value.new {
+    color: #10b981;
+}
+
+.stat-value.skipped {
+    color: var(--color-powder-blue);
+}
+
+.file-lists {
+    text-align: left;
+    margin: 24px 0;
+    max-height: 180px;
+    overflow-y: auto;
+    padding-right: 8px;
+}
+
+.file-lists::-webkit-scrollbar {
+    width: 4px;
+}
+
+.file-lists::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 10px;
+}
+
+.file-list h5 {
+    margin: 0 0 12px 0;
+    font-size: 11px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    letter-spacing: 0.05em;
+}
+
+.file-list ul {
+    margin: 0;
+    padding-left: 20px;
+    font-size: 13px;
+    color: var(--color-ice-blue);
+    list-style: none;
+}
+
+.file-list li {
+    margin-bottom: 8px;
+    position: relative;
+}
+
+.file-list li::before {
+    content: "→";
+    position: absolute;
+    left: -18px;
+    color: var(--primary);
+    font-weight: 900;
+}
+
+.done-btn {
+    width: 100%;
+    padding: 16px;
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 12px rgba(15, 82, 186, 0.3);
+}
+
+.done-btn:hover {
+    background: var(--primary-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(15, 82, 186, 0.5);
+}

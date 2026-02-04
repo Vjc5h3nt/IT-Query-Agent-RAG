@@ -1,0 +1,95 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+:root {
+  /* ChatGPT-style Refined Palette */
+  --bg-app: #f7f7f8;
+  /* Soft light grey/silver tone */
+  --bg-sidebar: #f9f9fb;
+  --bg-input: #ffffff;
+
+  --color-brand-primary: #10a37f;
+  --color-brand-accent: #1a7f64;
+
+  --text-primary: #111827;
+  /* Near-black for user text */
+  --text-secondary: #1F2937;
+  /* AI response text color */
+  --text-muted: #9ca3af;
+  /* Timestamps and icons */
+
+  --bg-user-msg: #edeef0;
+  /* Subtle grey bubble */
+  --border-divider: #e5e7eb;
+  --border-light: #e5e7eb;
+  --border-medium: #d1d5db;
+
+  --shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 18px;
+}
+
+[data-theme='dark'] {
+  --bg-app: #0f1115;
+  --bg-sidebar: #14171c;
+  --bg-input: #1b1f26;
+
+  /* Layers for consistency */
+  --bg-chat: #0f1115;
+  --bg-msg-ai: #1b1f26;
+  --bg-msg-user: #1b1f26;
+
+  --text-primary: #e6eaf0;
+  --text-secondary: #a0a7b4;
+  --text-muted: #6f7685;
+
+  --bg-user-msg: #1b1f26;
+  --border-divider: #242a36;
+  --border-light: #242a36;
+  --border-medium: #2d3442;
+
+  --icon-default: #a0a7b4;
+  --icon-hover: #e6eaf0;
+  --icon-active: #4f8cff;
+  --icon-disabled: #5a6070;
+
+  --shadow-sm: 0 0 0 1px rgba(255, 255, 255, 0.02);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: 'Inter', -apple-system, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: var(--bg-app);
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+#root {
+  width: 100%;
+  height: 100vh;
+  overflow: hidden;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+button {
+  font-family: 'Inter', sans-serif;
+}

@@ -1,0 +1,13 @@
+fastapi[all]
+uvicorn[standard]
+boto3
+chromadb
+langchain
+langchain-community
+langchain-aws
+sqlalchemy
+python-dotenv
+pydantic
+pydantic-settings
+pypdf
+python-docx
