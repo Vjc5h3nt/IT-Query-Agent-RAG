@@ -27,6 +27,9 @@ function Sidebar({
     const [editingSessionId, setEditingSessionId] = useState(null);
     const [editingSessionValue, setEditingSessionValue] = useState("");
 
+    // System details modal
+    const [showSystemDetails, setShowSystemDetails] = useState(false);
+
     const handleStartEdit = () => {
         setTempName(userName);
         setIsEditingName(true);
@@ -65,14 +68,27 @@ function Sidebar({
             <div className="sidebar">
                 <div className="sidebar-header">
                     <div className="brand">
-                        <span className="brand-text">IT Query Agent</span>
+                        <div className="brand-content">
+                            <span className="brand-text">IT Query Agent</span>
+                            <span className="brand-credit">Developed by Perplex Squad</span>
+                        </div>
                     </div>
                     {!isCollapsed && (
                         <div className="header-actions">
-                            <button className="btn-new-session" onClick={onNewSession}>
-                                <span className="plus-icon">+</span> New chat
+                            <button
+                                className={`btn-new-session ${isSearchVisible ? 'minimized' : ''}`}
+                                onClick={() => {
+                                    if (isSearchVisible) {
+                                        setIsSearchVisible(false);
+                                    }
+                                    onNewSession();
+                                }}
+                            >
+                                <span className="plus-icon">+</span>
+                                {!isSearchVisible && <span className="btn-text">New chat</span>}
                             </button>
-                            <div className={`search-wrapper ${isSearchVisible ? 'visible' : ''}`}>
+
+                            <div className={`search-wrapper ${isSearchVisible ? 'expanded' : ''}`}>
                                 <button className="btn-search" onClick={() => setIsSearchVisible(!isSearchVisible)}>
                                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
                                 </button>
@@ -170,6 +186,17 @@ function Sidebar({
                                         </div>
                                     )}
                                 </div>
+                                <button
+                                    className="action-btn system-info"
+                                    onClick={() => setShowSystemDetails(true)}
+                                    title="System Details"
+                                >
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <circle cx="12" cy="12" r="10"></circle>
+                                        <line x1="12" y1="16" x2="12" y2="12"></line>
+                                        <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                                    </svg>
+                                </button>
                             </div>
                             <button className="btn-toggle-theme" onClick={onToggleTheme} title={theme === 'light' ? 'Switch to Dark Mode' : 'Switch to Light Mode'}>
                                 {theme === 'light' ? (
@@ -179,6 +206,68 @@ function Sidebar({
                                 )}
                             </button>
                         </div>
+
+                        {/* System Details Modal */}
+                        {showSystemDetails && (
+                            <div className="modal-overlay" onClick={() => setShowSystemDetails(false)}>
+                                <div className="modal-content system-details-modal" onClick={(e) => e.stopPropagation()}>
+                                    <div className="modal-header">
+                                        <h3>System Details</h3>
+                                        <button className="modal-close" onClick={() => setShowSystemDetails(false)}>×</button>
+                                    </div>
+                                    <div className="modal-body">
+                                        <table className="system-details-table">
+                                            <tbody>
+                                                <tr>
+                                                    <td className="detail-category">Language Model</td>
+                                                    <td className="detail-value">Claude 3 Haiku (AWS Bedrock)</td>
+                                                </tr>
+                                                <tr>
+                                                    <td className="detail-category">Temperature</td>
+                                                    <td className="detail-value">0.1 (High Precision)</td>
+                                                </tr>
+                                                <tr>
+                                                    <td className="detail-category">Embeddings</td>
+                                                    <td className="detail-value">Amazon Titan Text v1 (1536D)</td>
+                                                </tr>
+                                                <tr>
+                                                    <td className="detail-category">Vector Store</td>
+                                                    <td className="detail-value">ChromaDB (L2 Distance)</td>
+                                                </tr>
+                                                <tr>
+                                                    <td className="detail-category">Similarity Threshold</td>
+                                                    <td className="detail-value">0.7</td>
+                                                </tr>
+                                                <tr>
+                                                    <td className="detail-category">Reranker</td>
+                                                    <td className="detail-value">ms-marco-MiniLM-L-6-v2</td>
+                                                </tr>
+                                                <tr>
+                                                    <td className="detail-category">Retrieval Pipeline</td>
+                                                    <td className="detail-value">Stage 1: 50 → Stage 2: Top 5</td>
+                                                </tr>
+                                                <tr>
+                                                    <td className="detail-category">Backend</td>
+                                                    <td className="detail-value">FastAPI (Python 3.11+)</td>
+                                                </tr>
+                                                <tr>
+                                                    <td className="detail-category">Session Storage</td>
+                                                    <td className="detail-value">SQLite</td>
+                                                </tr>
+                                                <tr>
+                                                    <td className="detail-category">Memory Window</td>
+                                                    <td className="detail-value">5 messages</td>
+                                                </tr>
+                                                <tr>
+                                                    <td className="detail-category">Frontend</td>
+                                                    <td className="detail-value">React 18 + Vite</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </>
                 )}
             </div>
