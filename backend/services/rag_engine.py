@@ -1,8 +1,9 @@
 """RAG engine for retrieval and answer generation."""
-from typing import List, Dict, Tuple
+from typing import List, Dict, Tuple, Any
 from services.vector_store import vector_store
 from services.bedrock_client import bedrock_client
 from services.memory_service import memory_service
+from services.retriever import get_retriever
 from app.config import settings
 import logging
 
@@ -12,7 +13,7 @@ logger = logging.getLogger(__name__)
 class RAGEngine:
     """RAG retrieval and generation engine."""
     
-    def retrieve(self, query: str, top_k: int = None) -> Tuple[str, List[str]]:
+    def retrieve(self, query: str, top_k: int = None, use_reranking: bool = None) -> Tuple[str, List[str], Any]:
         """
         Retrieve relevant context for a query.
         
@@ -24,14 +25,18 @@ class RAGEngine:
             Tuple of (formatted_context, source_list)
         """
         if top_k is None:
-            top_k = settings.top_k_results
+            # We use 15 chunks to ensure coverage for multi-topic questions.
+            top_k = max(settings.top_k_results, 15)
         
-        # Search vector store
-        results = vector_store.search(query, top_k=top_k)
+        # Get retriever based on settings or override
+        retriever = get_retriever(settings, vector_store, use_reranking=use_reranking)
+        
+        # Execute retrieval
+        results = retriever.retrieve(query, top_k=top_k)
         
         if not results['documents']:
             logger.warning("No relevant documents found")
-            return "", []
+            return "", [], None
         
         # Format context from retrieved chunks
         context_parts = []
@@ -55,7 +60,8 @@ class RAGEngine:
         
         logger.info(f"Retrieved {len(results['documents'])} chunks from {len(sources)} sources")
         logger.debug(f"Retrieved Context Preview: {formatted_context[:500]}...")
-        return formatted_context, sources
+        
+        return formatted_context, sources, results.get('rerank_summary')
     
     def generate_answer(
         self,
@@ -111,8 +117,9 @@ class RAGEngine:
         query: str,
         session_id: str,
         conversation_history: List[Dict[str, str]] = None,
-        use_knowledge_base: bool = True
-    ) -> Tuple[str, List[str]]:
+        use_knowledge_base: bool = True,
+        use_reranking: bool = None
+    ) -> Tuple[str, List[str], Any]:
         """
         Complete RAG chat: retrieve context and generate answer.
         
@@ -123,18 +130,19 @@ class RAGEngine:
             use_knowledge_base: Whether to use the vector knowledge base
             
         Returns:
-            Tuple of (answer, sources)
+            Tuple of (answer, sources, rerank_summary)
         """
         # Step 1: Retrieve relevant context (only if enabled)
         context = ""
         sources = []
+        rerank_summary = None
         if use_knowledge_base:
-            context, sources = self.retrieve(query)
+            context, sources, rerank_summary = self.retrieve(query, use_reranking=use_reranking)
         
         # Step 2: Generate answer
         answer = self.generate_answer(query, context, session_id, conversation_history, use_knowledge_base)
         
-        return answer, sources
+        return answer, sources, rerank_summary
 
 
 # Global RAG engine instance

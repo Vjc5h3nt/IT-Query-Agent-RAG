@@ -130,23 +130,34 @@ class DocumentProcessor:
             logger.error(f"Error loading {file_path}: {str(e)}")
             return []
     
-        return {
-            'chunks': all_chunks,
-            'metadatas': all_metadatas,
-            'file_chunk_counts': file_chunk_counts
-        }
-    
-    def process_documents(self, file_paths: List[str]) -> Dict:
+    def process_documents(self, file_paths: List[str], chunk_size: int = None, chunk_overlap: int = None) -> Dict:
         """
         Process documents: load, chunk, and prepare for embedding.
         
         Args:
             file_paths: List of file paths to process
+            chunk_size: Optional chunk size override
+            chunk_overlap: Optional chunk overlap override
             
         Returns:
             Dictionary with processed chunks and metadata
         """
         from tqdm import tqdm
+        
+        # Use provided values or defaults from settings
+        c_size = chunk_size or settings.chunk_size
+        c_overlap = chunk_overlap or settings.chunk_overlap
+        
+        # Create a temporary splitter if overrides are provided
+        if chunk_size or chunk_overlap:
+            splitter = RecursiveCharacterTextSplitter(
+                chunk_size=c_size,
+                chunk_overlap=c_overlap,
+                length_function=len,
+                separators=["\n\n", "\n", ". ", " ", ""]
+            )
+        else:
+            splitter = self.text_splitter
         
         all_chunks = []
         all_metadatas = []
@@ -163,7 +174,7 @@ class DocumentProcessor:
                 continue
             
             # Split into chunks
-            chunks = self.text_splitter.split_documents(documents)
+            chunks = splitter.split_documents(documents)
             
             # Prepare metadata for each chunk
             for i, chunk in enumerate(chunks):

@@ -16,11 +16,16 @@ function Sidebar({
     theme,
     onToggleTheme,
     userName,
-    onUpdateUserName
+    onUpdateUserName,
+    onRenameSession
 }) {
     const [isSearchVisible, setIsSearchVisible] = useState(false);
     const [isEditingName, setIsEditingName] = useState(false);
     const [tempName, setTempName] = useState(userName);
+
+    // Session renaming state
+    const [editingSessionId, setEditingSessionId] = useState(null);
+    const [editingSessionValue, setEditingSessionValue] = useState("");
 
     const handleStartEdit = () => {
         setTempName(userName);
@@ -37,6 +42,19 @@ function Sidebar({
     const handleKeyDown = (e) => {
         if (e.key === 'Enter') handleSaveName();
         if (e.key === 'Escape') setIsEditingName(false);
+    };
+
+    const startEditingSession = (e, session) => {
+        e.stopPropagation();
+        setEditingSessionId(session.id);
+        setEditingSessionValue(session.name);
+    };
+
+    const saveSessionName = (sessionId) => {
+        if (editingSessionValue.trim() && editingSessionValue !== sessions.find(s => s.id === sessionId)?.name) {
+            onRenameSession(sessionId, editingSessionValue.trim());
+        }
+        setEditingSessionId(null);
     };
 
     return (
@@ -87,17 +105,45 @@ function Sidebar({
                                             key={session.id}
                                             className={`session-item ${currentSession?.id === session.id ? 'active' : ''}`}
                                             onClick={() => onSelectSession(session.id)}
+                                            title={`Standard Name: Chat Session ${new Date(session.created_at).toLocaleString()}`}
                                         >
-                                            <div className="session-name">{session.name}</div>
-                                            <div className="session-actions">
-                                                <button className="action-btn delete" onClick={(e) => { e.stopPropagation(); onDeleteSession(session.id); }} title="Delete session">
-                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                                                </button>
-                                            </div>
+                                            {editingSessionId === session.id ? (
+                                                <input
+                                                    autoFocus
+                                                    className="session-name-edit"
+                                                    value={editingSessionValue}
+                                                    onChange={(e) => setEditingSessionValue(e.target.value)}
+                                                    onBlur={() => saveSessionName(session.id)}
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === 'Enter') saveSessionName(session.id);
+                                                        if (e.key === 'Escape') setEditingSessionId(null);
+                                                    }}
+                                                    onClick={(e) => e.stopPropagation()}
+                                                />
+                                            ) : (
+                                                <>
+                                                    <div className="session-name">{session.name}</div>
+                                                    <div className="session-actions">
+                                                        <button className="action-btn edit" onClick={(e) => startEditingSession(e, session)} title="Rename session">
+                                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                                                        </button>
+                                                        <button className="action-btn delete" onClick={(e) => { e.stopPropagation(); onDeleteSession(session.id); }} title="Delete session">
+                                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                                                        </button>
+                                                    </div>
+                                                </>
+                                            )}
                                         </div>
                                     ))
                                 )}
                             </div>
+                        </div>
+
+                        <div className="sidebar-tools">
+                            <button className="btn-sidebar-tool ingest" onClick={onIngest}>
+                                <span className="tool-icon">📚</span>
+                                <span className="tool-text">Ingest Documents</span>
+                            </button>
                         </div>
 
                         <div className="sidebar-footer">

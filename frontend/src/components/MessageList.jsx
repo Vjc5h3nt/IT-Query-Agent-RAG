@@ -5,6 +5,7 @@ import './MessageList.css';
 function MessageList({ messages, sources, onRegenerate, loading, userName }) {
     const messagesEndRef = useRef(null);
     const [copiedIndex, setCopiedIndex] = useState(null);
+    const [showAuditIndex, setShowAuditIndex] = useState(null);
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -55,9 +56,77 @@ function MessageList({ messages, sources, onRegenerate, loading, userName }) {
                                             {msg.role === 'user' ? userName : 'Agent'}
                                         </span>
                                         {msg.role === 'assistant' && <span className="plus-badge">AI</span>}
+                                        {msg.role === 'assistant' && msg.rerank_summary && (
+                                            <button
+                                                className="btn-rerank-audit"
+                                                onClick={() => setShowAuditIndex(index)}
+                                                title="View Reranking Audit"
+                                            >
+                                                <div className="audit-icon-bw">
+                                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                                                    <span>Audit</span>
+                                                </div>
+                                            </button>
+                                        )}
                                         <span className="message-time">{formatTime(msg.timestamp)}</span>
                                     </div>
                                 </div>
+
+                                {/* Rerank Audit Overlay */}
+                                {showAuditIndex === index && msg.rerank_summary && (
+                                    <div className="rerank-audit-overlay" onClick={() => setShowAuditIndex(null)}>
+                                        <div className="rerank-audit-panel" onClick={e => e.stopPropagation()}>
+                                            <div className="audit-panel-header">
+                                                <h4>
+                                                    <span className="icon">🧙‍♂️</span>
+                                                    Cross-Encoder Retrieval Audit
+                                                </h4>
+                                                <button className="close-audit" onClick={() => setShowAuditIndex(null)}>&times;</button>
+                                            </div>
+                                            <div className="audit-info-text">
+                                                The Cross-Encoder analyzed candidates and re-ordered them based on deep semantic relevance to your query.
+                                            </div>
+                                            <div className="audit-table-wrapper">
+                                                <table className="audit-table">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Final Rank</th>
+                                                            <th>Document</th>
+                                                            <th>Initial Rank</th>
+                                                            <th>Impact</th>
+                                                            <th>Score</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {msg.rerank_summary.map((res, i) => {
+                                                            const jump = res.initial_rank - res.final_rank;
+                                                            const isUp = jump > 0;
+                                                            const isDown = jump < 0;
+
+                                                            return (
+                                                                <tr key={i}>
+                                                                    <td className="final-rank-cell">#{res.final_rank}</td>
+                                                                    <td className="doc-cell">
+                                                                        <div className="doc-name">{res.filename}</div>
+                                                                        <div className="doc-page">Page {res.page}</div>
+                                                                    </td>
+                                                                    <td className="initial-rank-cell">#{res.initial_rank}</td>
+                                                                    <td className={`impact-cell ${isUp ? 'positive' : isDown ? 'negative' : ''}`}>
+                                                                        {isUp ? `↑${jump}` : isDown ? `↓${Math.abs(jump)}` : '-'}
+                                                                    </td>
+                                                                    <td className="score-cell">{res.score.toFixed(4)}</td>
+                                                                </tr>
+                                                            );
+                                                        })}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                            <div className="audit-footer">
+                                                <span>⚡ Optimized with MS-Marco MiniLM-L6</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                             <div className="message-body">
                                 <div className="message-text">

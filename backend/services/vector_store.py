@@ -13,12 +13,8 @@ class CustomEmbeddingFunction:
     """Custom embedding function using AWS Bedrock Titan."""
     
     def __call__(self, input: List[str]) -> List[List[float]]:
-        """Generate embeddings for a list of texts."""
-        embeddings = []
-        for text in input:
-            embedding = bedrock_client.generate_embedding(text)
-            embeddings.append(embedding)
-        return embeddings
+        """Generate embeddings for a list of texts using optimized batch client."""
+        return bedrock_client.generate_embeddings(input)
 
 
 class VectorStore:
@@ -66,16 +62,26 @@ class VectorStore:
             ids: List of unique IDs for each chunk
         """
         try:
-            # Generate embeddings manually
+            # Generate embeddings manually (now parallelized via bedrock_client)
             embeddings = self.embedding_function(texts)
             
-            self.collection.add(
-                documents=texts,
-                embeddings=embeddings,
-                metadatas=metadatas,
-                ids=ids
-            )
-            logger.info(f"Added {len(texts)} documents to vector store")
+            # Add to collection in smaller sub-batches to be safe (e.g., 500 at a time)
+            batch_size = 500
+            total_added = 0
+            
+            for i in range(0, len(texts), batch_size):
+                end_idx = min(i + batch_size, len(texts))
+                
+                self.collection.add(
+                    documents=texts[i:end_idx],
+                    embeddings=embeddings[i:end_idx],
+                    metadatas=metadatas[i:end_idx],
+                    ids=ids[i:end_idx]
+                )
+                total_added += (end_idx - i)
+                logger.info(f"Pushed {total_added}/{len(texts)} chunks to vector store...")
+
+            logger.info(f"Successfully added {len(texts)} total documents to vector store")
         except Exception as e:
             logger.error(f"Error adding documents: {str(e)}")
             raise
@@ -138,10 +144,6 @@ class VectorStore:
                         filtered_results['ids'].append(results['ids'][0][i])
             
             logger.info(f"Search found {len(results['documents'][0] if results['documents'] else [])} matches, kept {len(filtered_results['documents'])} after filtering")
-            
-            logger.info(f"Search found {len(results['documents'][0] if results['documents'] else [])} matches, kept {len(filtered_results['documents'])} after filtering")
-            
-            logger.info(f"Search returned {len(filtered_results['documents'])} results")
             return filtered_results
             
         except Exception as e:

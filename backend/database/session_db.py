@@ -34,6 +34,7 @@ class Message(Base):
     role = Column(String, nullable=False)  # 'user' or 'assistant'
     content = Column(Text, nullable=False)
     timestamp = Column(DateTime, default=datetime.utcnow)
+    rerank_summary = Column(Text, nullable=True)  # JSON string of auditing data
     
     # Relationship to session
     session = relationship("ChatSession", back_populates="messages")
@@ -60,6 +61,21 @@ class SessionDatabase:
         self.engine = create_engine(f'sqlite:///{db_path}', echo=False)
         Base.metadata.create_all(self.engine)
         self.SessionLocal = sessionmaker(bind=self.engine)
+        
+        # Simple migration: add rerank_summary column if it doesn't exist
+        try:
+            from sqlalchemy import text
+            with self.engine.connect() as conn:
+                # Check if column exists
+                result = conn.execute(text("PRAGMA table_info(messages)"))
+                columns = [row[1] for row in result]
+                if 'rerank_summary' not in columns:
+                    logger.info("Migrating database: adding rerank_summary column to messages table")
+                    conn.execute(text("ALTER TABLE messages ADD COLUMN rerank_summary TEXT"))
+                    conn.commit()
+        except Exception as e:
+            logger.warning(f"Database migration check failed (might be fine if already migrated): {e}")
+
         logger.info(f"Initialized database at {db_path}")
     
     def get_session(self):
@@ -129,11 +145,18 @@ class SessionDatabase:
     
     # ===== Message Methods =====
     
-    def add_message(self, session_id: str, role: str, content: str) -> Message:
-        """Add a message to a session."""
+    def add_message(self, session_id: str, role: str, content: str, rerank_summary: list = None) -> Message:
+        """Add a message to a session with optional reranking audit data."""
+        import json
         db = self.get_session()
         try:
-            message = Message(session_id=session_id, role=role, content=content)
+            summary_json = json.dumps(rerank_summary) if rerank_summary else None
+            message = Message(
+                session_id=session_id, 
+                role=role, 
+                content=content,
+                rerank_summary=summary_json
+            )
             db.add(message)
             
             # Update session's updated_at timestamp
@@ -144,6 +167,20 @@ class SessionDatabase:
             db.commit()
             db.refresh(message)
             return message
+        finally:
+            db.close()
+
+    def update_session_name(self, session_id: str, name: str) -> bool:
+        """Update the name of a chat session."""
+        db = self.get_session()
+        try:
+            session = db.query(ChatSession).filter(ChatSession.id == session_id).first()
+            if session:
+                session.name = name
+                session.updated_at = datetime.utcnow()
+                db.commit()
+                return True
+            return False
         finally:
             db.close()
     

@@ -1,7 +1,7 @@
 import React from 'react';
 import './IngestionModal.css';
 
-function IngestionModal({ isOpen, onClose, status, step, stats }) {
+function IngestionModal({ isOpen, onClose, status, step, stats, onStartIngestion }) {
     if (!isOpen) return null;
 
     return (
@@ -13,7 +13,36 @@ function IngestionModal({ isOpen, onClose, status, step, stats }) {
                 </div>
 
                 <div className="ingestion-content">
-                    {status === 'processing' ? (
+                    {!status ? (
+                        <div className="selection-state">
+                            <p className="selection-info">Select an ingestion strategy for your documents:</p>
+
+                            <div className="strategy-options">
+                                <div className="strategy-card" onClick={() => onStartIngestion('normal')}>
+                                    <div className="strategy-icon">📘</div>
+                                    <div className="strategy-title">Standard RAG</div>
+                                    <ul className="strategy-features">
+                                        <li>Chunk Size: 1000</li>
+                                        <li>Overlap: 200</li>
+                                        <li>Memory: 5 Messages</li>
+                                    </ul>
+                                    <button className="select-btn">Select Standard</button>
+                                </div>
+
+                                <div className="strategy-card premium" onClick={() => onStartIngestion('rerank')}>
+                                    <div className="strategy-icon">⚡</div>
+                                    <div className="strategy-title">Performance (Cross-Encoder)</div>
+                                    <ul className="strategy-features">
+                                        <li>Chunk Size: 400 (Denser)</li>
+                                        <li>Top-K Stage 1: 40</li>
+                                        <li>Memory: 12 Messages</li>
+                                    </ul>
+                                    <div className="premium-tag">Recommended for Accuracy</div>
+                                    <button className="select-btn">Select Performance</button>
+                                </div>
+                            </div>
+                        </div>
+                    ) : status === 'processing' ? (
                         <div className="processing-state">
                             <div className="spinner"></div>
                             <p>Processing documents...</p>

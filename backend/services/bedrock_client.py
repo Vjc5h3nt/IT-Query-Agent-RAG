@@ -32,6 +32,11 @@ class BedrockClient:
             Embedding vector as list of floats
         """
         try:
+            if not text or not text.strip():
+                # Return zero vector for empty text to avoid API errors
+                # Titan embeddings are 1536 dims
+                return [0.0] * 1536
+
             # Titan embedding request format
             request_body = json.dumps({
                 "inputText": text
@@ -53,9 +58,75 @@ class BedrockClient:
             raise
 
     def generate_embeddings(self, texts: List[str]) -> List[List[float]]:
-        """Generate embeddings for a list of texts."""
-        return [self.generate_embedding(text) for text in texts]
+        """
+        Generate embeddings for a list of texts in parallel.
+        
+        Args:
+            texts: List of strings to embed
+            
+        Returns:
+            List of embedding vectors
+        """
+        from concurrent.futures import ThreadPoolExecutor, as_completed
+        from tqdm import tqdm
+        
+        if not texts:
+            return []
+
+        logger.info(f"Generating embeddings for {len(texts)} chunks in parallel...")
+        
+        # Parallelize using ThreadPoolExecutor
+        # 10-20 threads is usually safe for Bedrock default quotas (50 TPS)
+        max_workers = 15
+        embeddings = [None] * len(texts)
+        
+        with tqdm(total=len(texts), desc="✨ Generating Embeddings", unit="chunk") as pbar:
+            with ThreadPoolExecutor(max_workers=max_workers) as executor:
+                # Map original index to future to maintain order
+                future_to_idx = {
+                    executor.submit(self.generate_embedding, text): i 
+                    for i, text in enumerate(texts)
+                }
+                
+                for future in as_completed(future_to_idx):
+                    idx = future_to_idx[future]
+                    try:
+                        embeddings[idx] = future.result()
+                    except Exception as e:
+                        logger.error(f"Failed to generate embedding for chunk {idx}: {e}")
+                        # Provide a fallback zero vector so the whole batch doesn't fail
+                        embeddings[idx] = [0.0] * 1536
+                    
+                    pbar.update(1)
+        
+        return embeddings
     
+    def generate_simple_text(self, prompt: str) -> str:
+        """
+        Generate a simple text response without context or grounding.
+        Perfect for utility tasks like auto-naming sessions.
+        """
+        try:
+            request_body = json.dumps({
+                "anthropic_version": "bedrock-2023-05-31",
+                "max_tokens": 100,
+                "temperature": 0.5,
+                "messages": [{"role": "user", "content": prompt}]
+            })
+            
+            response = self.client.invoke_model(
+                modelId=self.model_id,
+                body=request_body,
+                contentType='application/json',
+                accept='application/json'
+            )
+            
+            response_body = json.loads(response['body'].read())
+            return response_body.get('content', [{}])[0].get('text', '').strip()
+        except Exception as e:
+            logger.error(f"Error in simple text generation: {e}")
+            return ""
+
     def generate_response(
         self,
         user_message: str,
@@ -78,24 +149,23 @@ class BedrockClient:
         try:
             # Build conversation with strict grounding system prompt
             if use_knowledge_base:
-                system_prompt = """You are a helpful, professional assistant.
+                system_prompt = """You are a helpful, professional assistant that uses a knowledge base to answer questions.
 
-CRITICAL RULES:
-1. For greetings (e.g., "Hi", "Hello") or casual chat, answer naturally and concisely. DO NOT explain what you can/cannot do or mention "context" or "internal knowledge".
-2. For subject-specific or factual questions, use ONLY the provided "Context from knowledge base".
-3. If the answer is not in the context, say: "I don't have enough information in my knowledge base to answer that question."
-4. DO NOT guess or hallucinate. If details are missing, ask for clarification.
-5. Do NOT reference topics not mentioned in THIS session.
-6. Be direct and avoid unnecessary preamble."""
+GROUNDING RULES:
+1. For factual questions, use ONLY the provided "Context from knowledge base".
+2. PRIORITIZE the current "Context from knowledge base" even if it contradicts your previous answers in the conversation history. The knowledge base context can change or be updated between turns.
+3. If the answer is in the current context, provide it fully, even if you previously said it wasn't available. Address EVERY part of a multi-point question.
+4. If the answer for a specific part is missing, answer the other parts and state clearly which part is unavailable in the knowledge base.
+5. If the entire answer is missing, say: "I don't have enough information in my knowledge base to answer that question."
+6. DO NOT hallucinate. Be direct and concise.
+7. For casual chat or greetings, ignore the knowledge base and answer naturally. """
             else:
-                system_prompt = """You are a helpful assistant. Knowledge base access is DISABLED.
+                system_prompt = """You are a helpful assistant. Knowledge base access is currently DISABLED.
 
-CRITICAL RULES:
-1. For greetings or casual chat, answer naturally and concisely. DO NOT explain your constraints.
-2. For ANY subject-specific or factual questions, politely state: "Please enable the Knowledge Base in the UI to ask questions about the documents."
-3. DO NOT use your own knowledge for factual questions. 
-4. DO NOT guess.
-5. Do NOT mention why you can't answer in detail unless it's a factual question."""
+RULES:
+1. For greetings or casual chat, answer naturally.
+2. For factual questions, politely state: "Please enable the Knowledge Base in the UI to ask questions about the documents."
+3. DO NOT use internal knowledge for factual questions when access is disabled."""
 
             # Format messages for Claude with alternating roles strictly enforced
             formatted_messages = []
@@ -107,6 +177,24 @@ CRITICAL RULES:
                     content = msg["content"]
                     
                     if not content or not content.strip():
+                        continue
+                    
+                    # Anti-Bias Filter: If assistant said "I don't know", don't include it in history.
+                    # This prevents the AI from being biased by its own previous retrieval failures.
+                    if role == 'assistant':
+                        failure_phrases = [
+                            "don't have enough information", 
+                            "not in my knowledge base",
+                            "enable the knowledge base",
+                            "unavailable in the knowledge base"
+                        ]
+                        if any(phrase in content.lower() for phrase in failure_phrases):
+                            logger.info("Filtered failure response from history to avoid grounding bias")
+                            continue
+                        
+                    # Claude requires the first message in the array to be 'user'
+                    if not formatted_messages and role == 'assistant':
+                        logger.debug("Skipping leading assistant message in history to satisfy Bedrock validation")
                         continue
                         
                     if role == last_role:

@@ -1,7 +1,7 @@
 """Document ingestion API endpoints."""
 from fastapi import APIRouter, HTTPException
 from typing import List
-from app.models import IngestionResponse, IngestionStatus
+from app.models import IngestionResponse, IngestionStatus, IngestionRequest
 from services.document_processor import document_processor
 from services.vector_store import vector_store
 from database.session_db import session_db
@@ -14,15 +14,36 @@ router = APIRouter(prefix="/ingest", tags=["ingestion"])
 
 
 @router.post("", response_model=IngestionResponse)
-async def ingest_documents():
+async def ingest_documents(request: IngestionRequest = None):
     """
     Ingest documents from data folder (incremental).
     Only processes new or modified documents.
     
+    Args:
+        request: Optional ingestion settings
+        
     Returns:
         Ingestion statistics
     """
     try:
+        from app.config import settings
+        
+        # Update app settings if provided
+        if request:
+            if request.top_k_stage1 is not None:
+                settings.top_k_stage1 = request.top_k_stage1
+                logger.info(f"Updated top_k_stage1 to {request.top_k_stage1}")
+            
+            if request.rerank_top_k is not None:
+                settings.rerank_top_k = request.rerank_top_k
+                # Also update top_k_results so it applies to the generation phase
+                settings.top_k_results = request.rerank_top_k
+                logger.info(f"Updated rerank_top_k to {request.rerank_top_k}")
+            
+            if request.max_memory_messages is not None:
+                settings.max_memory_messages = request.max_memory_messages
+                logger.info(f"Updated max_memory_messages to {request.max_memory_messages}")
+
         # Get files that need processing
         files_to_process, skipped_files = document_processor.get_files_to_process()
         
@@ -40,8 +61,15 @@ async def ingest_documents():
         processed_filenames = []
         
         if files_to_process:
-            # Process documents
-            result = document_processor.process_documents(files_to_process)
+            # Process documents with possible overrides
+            chunk_size = request.chunk_size if request else None
+            chunk_overlap = request.chunk_overlap if request else None
+            
+            result = document_processor.process_documents(
+                files_to_process, 
+                chunk_size=chunk_size, 
+                chunk_overlap=chunk_overlap
+            )
             
             chunks = result['chunks']
             metadatas = result['metadatas']

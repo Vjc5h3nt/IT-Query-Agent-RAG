@@ -6,7 +6,7 @@ import MessageList from './MessageList';
 import ChatInput from './ChatInput';
 import './ChatInterface.css';
 
-function ChatInterface({ session, onSendMessage, useKnowledgeBase, onToggleKnowledgeBase, userName }) {
+function ChatInterface({ session, onSendMessage, useKnowledgeBase, onToggleKnowledgeBase, useReranking, onToggleReranking, userName }) {
     const [messages, setMessages] = useState([]);
     const [loading, setLoading] = useState(false);
 
@@ -37,12 +37,13 @@ function ChatInterface({ session, onSendMessage, useKnowledgeBase, onToggleKnowl
         try {
             const response = await onSendMessage(message);
 
-            // Add assistant message with sources
+            // Add assistant message with sources and rerank summary
             const assistantMessage = {
                 role: 'assistant',
                 content: response.assistant_message.content,
                 timestamp: response.assistant_message.timestamp,
                 sources: response.sources,
+                rerank_summary: response.rerank_summary, // Capture the audit data
             };
 
             setMessages((prev) => [...prev, assistantMessage]);
@@ -81,7 +82,18 @@ function ChatInterface({ session, onSendMessage, useKnowledgeBase, onToggleKnowl
                         title={useKnowledgeBase ? "Knowledge Base ON" : "Knowledge Base OFF"}
                     >
                         <span className="kb-icon">📚</span>
-                        <span className="kb-text">Knowlege Base</span>
+                        <span className="kb-text">Knowledge Base</span>
+                        <div className="toggle-switch">
+                            <div className="toggle-knob"></div>
+                        </div>
+                    </div>
+                    <div
+                        className={`kb-toggle ${useReranking ? 'enabled' : ''}`}
+                        onClick={onToggleReranking}
+                        title={useReranking ? "Reranking (Cross-Encoder) ON" : "Reranking (Cross-Encoder) OFF"}
+                    >
+                        <span className="kb-icon">⚡</span>
+                        <span className="kb-text">Reranking</span>
                         <div className="toggle-switch">
                             <div className="toggle-knob"></div>
                         </div>

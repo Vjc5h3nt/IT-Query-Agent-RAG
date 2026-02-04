@@ -52,12 +52,9 @@ class MemoryService:
             return [item.value for item in items]
         else:
             # Get all memories in the namespace
-            items = self.store.list_namespaces(prefix=namespace)
-            # This returns namespaces. To get items, we should use search with no query if supported,
-            # or just list specific items if we known keys.
-            # Actually, search with no query or wildcards isn't always supported.
-            # For now, let's just return empty for list all if not needed.
-            return []
+            # InMemoryStore search with no query returns all items in namespace
+            items = self.store.search(namespace, limit=10)
+            return [item.value for item in items]
 
     def clear_session_memories(self, session_id: str) -> None:
         """Clear all memories for a session - since it's InMemoryStore, this is handled by namespace."""

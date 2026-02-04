@@ -25,10 +25,15 @@ class Settings(BaseSettings):
     
     # RAG Configuration
     top_k_results: int = 5
-    similarity_threshold: float = 400.0  # Titan embeddings are strictly unnormalized, L2 distance is large
+    similarity_threshold: float = 0.7  # Low L2 distance = High similarity
     chunk_size: int = 1000
     chunk_overlap: int = 200
     max_memory_messages: int = 5
+    cross_encoder_enabled: bool = False
+    
+    # Advanced Reranking Settings
+    rerank_top_k: int = 5
+    top_k_stage1: int = 50
     
     # Collection name for ChromaDB
     collection_name: str = "document_chunks"

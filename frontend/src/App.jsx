@@ -95,15 +95,31 @@ function App() {
     }
   };
 
+  const handleRenameSession = async (sessionId, newName) => {
+    try {
+      const updated = await api.updateSession(sessionId, newName);
+      setSessions((prev) =>
+        prev.map((s) => (s.id === sessionId ? { ...s, name: updated.name } : s))
+      );
+      if (currentSession?.id === sessionId) {
+        setCurrentSession((prev) => ({ ...prev, name: updated.name }));
+      }
+    } catch (error) {
+      console.error('Error renaming session:', error);
+      alert('Failed to rename session');
+    }
+  };
+
   // Knowledge Base state
   const [useKnowledgeBase, setUseKnowledgeBase] = useState(true);
+  const [useReranking, setUseReranking] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   const handleSendMessage = async (message) => {
     if (!currentSession) return;
 
-    const response = await api.sendMessage(currentSession.id, message, useKnowledgeBase);
+    const response = await api.sendMessage(currentSession.id, message, useKnowledgeBase, useReranking);
 
     // Reload sessions to update "updated_at"
     loadSessions();
@@ -124,19 +140,44 @@ function App() {
     }
   };
 
-  const handleIngest = async () => {
+  const handleOpenIngestModal = () => {
     setIngestionModalOpen(true);
-    setIngestionStatus('processing');
+    setIngestionStatus(null); // 'null' shows the selection UI
     setIngestionStats(null);
+  };
+
+  const handleIngestWithStrategy = async (strategy) => {
+    setIngestionStatus('processing');
+
+    let settings = {};
+    if (strategy === 'normal') {
+      settings = {
+        chunk_size: 1000,
+        chunk_overlap: 200,
+        top_k_stage1: 5,
+        rerank_top_k: 5,
+        max_memory_messages: 5
+      };
+    } else if (strategy === 'rerank') {
+      settings = {
+        chunk_size: 512,
+        chunk_overlap: 100,
+        top_k_stage1: 50,
+        rerank_top_k: 5,
+        max_memory_messages: 5
+      };
+      // Also enable reranking in the UI automatically if they choose this
+      setUseReranking(true);
+    }
 
     try {
-      const result = await api.ingestDocuments();
+      const result = await api.ingestDocuments(settings);
       setIngestionStatus('complete');
       setIngestionStats(result);
     } catch (error) {
       console.error('Error ingesting documents:', error);
       setIngestionStatus('error');
-      setIngestionStats({ error: error.message || 'Failed to ingest documents' });
+      setIngestionStats({ error: error.response?.data?.detail || error.message || 'Failed to ingest documents' });
     }
   };
 
@@ -171,8 +212,9 @@ function App() {
         onSelectSession={handleSelectSession}
         onNewSession={handleNewSession}
         onDeleteSession={handleDeleteSession}
+        onRenameSession={handleRenameSession}
         onDeleteAllSessions={handleDeleteAllSessions}
-        onIngest={handleIngest}
+        onIngest={handleOpenIngestModal}
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
         isCollapsed={isSidebarCollapsed}
@@ -188,6 +230,8 @@ function App() {
           onSendMessage={handleSendMessage}
           useKnowledgeBase={useKnowledgeBase}
           onToggleKnowledgeBase={() => setUseKnowledgeBase(!useKnowledgeBase)}
+          useReranking={useReranking}
+          onToggleReranking={() => setUseReranking(!useReranking)}
           userName={userName}
         />
       </div>
@@ -197,6 +241,7 @@ function App() {
         onClose={closeIngestionModal}
         status={ingestionStatus}
         stats={ingestionStats}
+        onStartIngestion={handleIngestWithStrategy}
       />
     </div>
   );

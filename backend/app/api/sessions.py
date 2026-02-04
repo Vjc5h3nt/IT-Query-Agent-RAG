@@ -104,12 +104,6 @@ async def delete_all_sessions():
 async def delete_session(session_id: str):
     """
     Delete a session.
-    
-    Args:
-        session_id: Session ID
-        
-    Returns:
-        Success message
     """
     try:
         success = session_manager.delete_session(session_id)
@@ -121,4 +115,25 @@ async def delete_session(session_id: str):
         raise
     except Exception as e:
         logger.error(f"Error deleting session {session_id}: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.patch("/{session_id}", response_model=Session)
+async def update_session(session_id: str, request: SessionCreate):
+    """
+    Rename a chat session.
+    """
+    try:
+        success = session_manager.update_session(session_id, request.name)
+        if not success:
+            raise HTTPException(status_code=404, detail="Session not found")
+        
+        updated_session = session_manager.get_session_detail(session_id)
+        return Session(
+            id=updated_session['id'],
+            name=updated_session['name'],
+            created_at=updated_session['created_at'],
+            updated_at=updated_session['updated_at']
+        )
+    except Exception as e:
+        logger.error(f"Error updating session {session_id}: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))

@@ -235,6 +235,24 @@
     border-radius: 4px;
 }
 
+.session-name-edit {
+    flex: 1;
+    background: var(--bg-input);
+    border: 1px solid var(--border-divider);
+    border-radius: 4px;
+    color: var(--text-primary);
+    font-size: 14px;
+    padding: 2px 6px;
+    width: 100%;
+    outline: none;
+    font-family: inherit;
+}
+
+[data-theme='dark'] .session-name-edit {
+    background: #1B1F26;
+    border-color: #333;
+}
+
 .sidebar-details {
     padding: 12px;
     border-top: 1px solid var(--border-divider);
@@ -262,6 +280,53 @@
 .detail-value {
     font-size: 12px;
     color: var(--text-secondary);
+}
+
+.sidebar-tools {
+    padding: 12px 8px;
+    border-top: 1px solid var(--border-divider);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.btn-sidebar-tool {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 12px;
+    color: var(--text-primary);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-sidebar-tool:hover {
+    background: var(--bg-user-msg);
+    border-color: var(--border-divider);
+}
+
+[data-theme='dark'] .btn-sidebar-tool:hover {
+    background: #1B1F26;
+    border-color: #333;
+}
+
+.btn-sidebar-tool.ingest {
+    color: var(--primary);
+}
+
+.btn-sidebar-tool.ingest:hover {
+    background: rgba(15, 82, 186, 0.1);
+    border-color: rgba(15, 82, 186, 0.3);
+}
+
+.tool-icon {
+    font-size: 18px;
 }
 
 .sidebar-footer {

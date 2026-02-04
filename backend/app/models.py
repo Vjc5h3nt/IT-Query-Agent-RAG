@@ -16,6 +16,16 @@ class ChatRequest(BaseModel):
     session_id: str = Field(..., description="Chat session ID")
     message: str = Field(..., min_length=1, description="User message")
     use_knowledge_base: bool = Field(True, description="Whether to use the vector knowledge base")
+    use_reranking: bool = Field(False, description="Whether to use Cross-Encoder reranking")
+
+
+class RerankResult(BaseModel):
+    """Details of a reranked document."""
+    initial_rank: int
+    final_rank: int
+    score: float
+    filename: str
+    page: Optional[str] = "N/A"
 
 
 class ChatResponse(BaseModel):
@@ -24,6 +34,7 @@ class ChatResponse(BaseModel):
     user_message: ChatMessage
     assistant_message: ChatMessage
     sources: List[str] = Field(default_factory=list, description="Source documents used")
+    rerank_summary: Optional[List[RerankResult]] = Field(None, description="Detailed reranking metrics")
 
 
 class SessionCreate(BaseModel):
@@ -42,6 +53,16 @@ class Session(BaseModel):
 class SessionDetail(Session):
     """Detailed session model with messages."""
     messages: List[ChatMessage] = Field(default_factory=list)
+
+
+class IngestionRequest(BaseModel):
+    """Request model for document ingestion settings."""
+    chunk_size: Optional[int] = Field(None, description="Size of text chunks")
+    chunk_overlap: Optional[int] = Field(None, description="Overlap between chunks")
+    # For updating application defaults via ingestion trigger
+    top_k_stage1: Optional[int] = Field(None, description="Number of candidates for reranking")
+    rerank_top_k: Optional[int] = Field(None, description="Final number of results after reranking")
+    max_memory_messages: Optional[int] = Field(None, description="Chat memory window size")
 
 
 class IngestionResponse(BaseModel):

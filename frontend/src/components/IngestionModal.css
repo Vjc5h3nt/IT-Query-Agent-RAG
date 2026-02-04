@@ -217,3 +217,124 @@
     transform: translateY(-2px);
     box-shadow: 0 8px 20px rgba(15, 82, 186, 0.5);
 }
+
+/* Strategy Selection UI */
+.selection-state {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.selection-info {
+    color: var(--text-muted);
+    font-size: 14px;
+    margin-bottom: 8px;
+    text-align: center;
+}
+
+.strategy-options {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+}
+
+.strategy-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 24px;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.strategy-card:hover {
+    border-color: var(--primary);
+    background: var(--bg-card);
+    transform: translateY(-4px);
+    box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+}
+
+.strategy-card.premium {
+    border: 1.5px solid rgba(15, 82, 186, 0.4);
+    background: linear-gradient(145deg, var(--bg-surface), rgba(15, 82, 186, 0.05));
+}
+
+.strategy-card.premium:hover {
+    border-color: var(--primary);
+}
+
+.strategy-icon {
+    font-size: 32px;
+}
+
+.strategy-title {
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--text-main);
+}
+
+.strategy-features {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.strategy-features li {
+    font-size: 11px;
+    font-weight: 700;
+    background: var(--bg-app);
+    color: var(--text-muted);
+    padding: 4px 10px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+}
+
+.premium-tag {
+    position: absolute;
+    top: 24px;
+    right: 24px;
+    background: var(--primary);
+    color: white;
+    font-size: 10px;
+    font-weight: 800;
+    padding: 4px 10px;
+    border-radius: 20px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    box-shadow: 0 4px 12px rgba(15, 82, 186, 0.4);
+}
+
+.select-btn {
+    margin-top: 8px;
+    padding: 12px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    color: var(--text-main);
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.strategy-card:hover .select-btn {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+}
+
+@media (min-width: 768px) {
+    .ingestion-modal {
+        max-width: 800px;
+    }
+
+    .strategy-options {
+        grid-template-columns: 1fr 1fr;
+    }
+}

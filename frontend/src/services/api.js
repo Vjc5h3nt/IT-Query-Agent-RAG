@@ -33,24 +33,30 @@ export const deleteSession = async (sessionId) => {
     return response.data;
 };
 
+export const updateSession = async (sessionId, name) => {
+    const response = await api.patch(`/sessions/${sessionId}`, { name });
+    return response.data;
+};
+
 export const deleteAllSessions = async () => {
     const response = await api.delete('/sessions');
     return response.data;
 };
 
 // Chat endpoints
-export const sendMessage = async (sessionId, message, useKnowledgeBase = true) => {
+export const sendMessage = async (sessionId, message, useKnowledgeBase = true, useReranking = false) => {
     const response = await api.post('/chat', {
         session_id: sessionId,
         message: message,
-        use_knowledge_base: useKnowledgeBase
+        use_knowledge_base: useKnowledgeBase,
+        use_reranking: useReranking
     });
     return response.data;
 };
 
 // Ingestion endpoints
-export const ingestDocuments = async () => {
-    const response = await api.post('/ingest');
+export const ingestDocuments = async (settings = {}) => {
+    const response = await api.post('/ingest', settings);
     return response.data;
 };
 

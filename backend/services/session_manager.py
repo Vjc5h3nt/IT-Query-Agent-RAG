@@ -52,13 +52,8 @@ class SessionManager:
     def get_session_detail(self, session_id: str) -> Optional[Dict]:
         """
         Get session details with messages.
-        
-        Args:
-            session_id: Session ID
-            
-        Returns:
-            Session dictionary with messages
         """
+        import json
         session = session_db.get_session_by_id(session_id)
         if not session:
             return None
@@ -74,7 +69,8 @@ class SessionManager:
                 {
                     "role": m.role,
                     "content": m.content,
-                    "timestamp": m.timestamp
+                    "timestamp": m.timestamp,
+                    "rerank_summary": json.loads(m.rerank_summary) if m.rerank_summary else None
                 }
                 for m in messages
             ]
@@ -106,6 +102,39 @@ class SessionManager:
         self._memory_cache.clear()
         return session_db.delete_all_sessions()
     
+    def update_session(self, session_id: str, name: str) -> bool:
+        """Update a session's name."""
+        return session_db.update_session_name(session_id, name)
+
+    def auto_name_session(self, session_id: str, first_message: str) -> None:
+        """
+        Automatically generate a descriptive name for the session 
+        based on the first message if it currently has a default name.
+        """
+        # Get current session to check name
+        session = session_db.get_session_by_id(session_id)
+        
+        # Only auto-name if it has the default "Chat Session YYYY-MM-DD..." name
+        if not session or not session.name.startswith("Chat Session"):
+            return
+
+        from services.bedrock_client import bedrock_client
+        prompt = (
+            "Generate a very concise, 2-4 word title for a chat conversation that starts with this message: "
+            f"'{first_message}'. Respond ONLY with the title. No quotes, no intro, no punctuation."
+        )
+        
+        try:
+            new_name = bedrock_client.generate_simple_text(prompt)
+            if new_name and len(new_name) < 50:
+                # Clean up the name (remove quotes if model ignored instructions)
+                clean_name = new_name.replace('"', '').replace("'", "").strip()
+                if clean_name:
+                    self.update_session(session_id, clean_name)
+                    logger.info(f"Auto-named session {session_id} to '{clean_name}'")
+        except Exception as e:
+            logger.error(f"Failed to auto-name session: {e}")
+
     def _get_or_create_memory(self, session_id: str) -> List[Dict[str, str]]:
         """
         Get or create memory for a session with 5-message window.
@@ -178,16 +207,12 @@ class SessionManager:
         
         logger.info(f"Added user message to session {session_id}")
     
-    def add_assistant_message(self, session_id: str, message: str) -> None:
+    def add_assistant_message(self, session_id: str, message: str, rerank_summary: list = None) -> None:
         """
-        Add assistant message to session (maintains 5-message window).
-        
-        Args:
-            session_id: Session ID
-            message: Assistant message content
+        Add assistant message to session with optional audit data.
         """
         # Add to database
-        session_db.add_message(session_id, "assistant", message)
+        session_db.add_message(session_id, "assistant", message, rerank_summary=rerank_summary)
         
         # Add to memory cache
         memory = self._get_or_create_memory(session_id)
