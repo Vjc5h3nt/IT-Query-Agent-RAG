@@ -123,7 +123,12 @@ class SessionManager:
             "Generate a very concise, 2-4 word title for a chat conversation that starts with this message: "
             f"'{first_message}'. Respond ONLY with the title. No quotes, no intro, no punctuation."
         )
-        
+            
+        # Only auto-name if it has a generic default name
+        generic_prefixes = ("Chat Session", "New Chat", "Session", "Conversation")
+        if not session or not session.name.startswith(generic_prefixes):
+            logger.info(f"Skipping auto-naming for session {session_id} with custom name: {session.name if session else 'None'}")
+            return
         try:
             new_name = bedrock_client.generate_simple_text(prompt)
             if new_name and len(new_name) < 50:

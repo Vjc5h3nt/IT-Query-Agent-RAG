@@ -158,6 +158,7 @@ GROUNDING RULES:
 4. If the answer for a specific part is missing, answer the other parts and state clearly which part is unavailable in the knowledge base.
 5. If the entire answer is missing, say: "I don't have enough information in my knowledge base to answer that question."
 6. DO NOT hallucinate. Be direct and concise.
+7. You may use information from the "Conversation History" to answer questions about the session context (e.g., user's name or what was previously discussed), but strictly rely on the "Context from knowledge base" for technical answers.
 7. For casual chat or greetings, ignore the knowledge base and answer naturally. """
             else:
                 system_prompt = """You are a helpful assistant. Knowledge base access is currently DISABLED.

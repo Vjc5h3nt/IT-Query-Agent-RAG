@@ -42,7 +42,20 @@ class RAGEngine:
         context_parts = []
         sources = []
         
-        for i, (doc, metadata) in enumerate(zip(results['documents'], results['metadatas']), 1):
+        # Handle ChromaDB structure which is sometimes nested
+        docs = results['documents']
+        metas = results['metadatas']
+        
+        # Access nested list if it exists and is not empty
+        if docs and isinstance(docs[0], list):
+            docs = docs[0]
+            metas = metas[0] if metas else []
+
+        if not docs:
+            logger.warning("No relevant documents found after unpacking")
+            return "", [], None
+
+        for i, (doc, metadata) in enumerate(zip(docs, metas), 1):
             filename = metadata.get('filename', 'Unknown')
             page = metadata.get('page', 'N/A')
             
@@ -55,6 +68,8 @@ class RAGEngine:
             source_ref = f"{filename} (Page {page})"
             if source_ref not in sources:
                 sources.append(source_ref)
+        
+        logger.info(f"Retrieved {len(sources)} unique sources")
         
         formatted_context = "\n".join(context_parts)
         
