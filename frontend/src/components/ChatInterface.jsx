@@ -6,13 +6,12 @@ import MessageList from './MessageList';
 import ChatInput from './ChatInput';
 import './ChatInterface.css';
 
-function ChatInterface({ session, onSendMessage, useKnowledgeBase, onToggleKnowledgeBase, useReranking, onToggleReranking, userName }) {
+function ChatInterface({ session, onSendMessage, useKnowledgeBase, onToggleKnowledgeBase, userName }) {
     const [messages, setMessages] = useState([]);
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
         if (session) {
-            // Load session messages
             setMessages(session.messages || []);
         } else {
             setMessages([]);
@@ -25,7 +24,6 @@ function ChatInterface({ session, onSendMessage, useKnowledgeBase, onToggleKnowl
         setLoading(true);
 
         if (!skipAddUser) {
-            // Add user message immediately
             const userMessage = {
                 role: 'user',
                 content: message,
@@ -37,13 +35,12 @@ function ChatInterface({ session, onSendMessage, useKnowledgeBase, onToggleKnowl
         try {
             const response = await onSendMessage(message);
 
-            // Add assistant message with sources and rerank summary
             const assistantMessage = {
                 role: 'assistant',
                 content: response.assistant_message.content,
                 timestamp: response.assistant_message.timestamp,
                 sources: response.sources,
-                rerank_summary: response.rerank_summary, // Capture the audit data
+                rerank_summary: response.rerank_summary,
             };
 
             setMessages((prev) => [...prev, assistantMessage]);
@@ -61,11 +58,10 @@ function ChatInterface({ session, onSendMessage, useKnowledgeBase, onToggleKnowl
     };
 
     const handleRegenerate = async (index) => {
-        // Find the user message before this assistant message
         const lastUserMessageIndex = messages.findLastIndex((m, i) => i < index && m.role === 'user');
         if (lastUserMessageIndex !== -1) {
             const lastUserMessage = messages[lastUserMessageIndex].content;
-            handleSendMessage(lastUserMessage, true); // true = skipAddUser
+            handleSendMessage(lastUserMessage, true);
         }
     };
 
@@ -83,17 +79,6 @@ function ChatInterface({ session, onSendMessage, useKnowledgeBase, onToggleKnowl
                     >
                         <span className="kb-icon">📚</span>
                         <span className="kb-text">Knowledge Base</span>
-                        <div className="toggle-switch">
-                            <div className="toggle-knob"></div>
-                        </div>
-                    </div>
-                    <div
-                        className={`kb-toggle ${useReranking ? 'enabled' : ''}`}
-                        onClick={onToggleReranking}
-                        title={useReranking ? "Reranking (Cross-Encoder) ON" : "Reranking (Cross-Encoder) OFF"}
-                    >
-                        <span className="kb-icon">⚡</span>
-                        <span className="kb-text">Reranking</span>
                         <div className="toggle-switch">
                             <div className="toggle-knob"></div>
                         </div>

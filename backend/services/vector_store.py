@@ -1,9 +1,10 @@
 """ChromaDB vector store for document embeddings."""
 import chromadb
 from chromadb.config import Settings as ChromaSettings
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Set
 from app.config import settings
 from services.bedrock_client import bedrock_client
+import numpy as np
 import logging
 
 logger = logging.getLogger(__name__)
@@ -13,16 +14,35 @@ class CustomEmbeddingFunction:
     """Custom embedding function using AWS Bedrock Titan."""
     
     def __call__(self, input: List[str]) -> List[List[float]]:
-        """Generate embeddings for a list of texts using optimized batch client."""
-        return bedrock_client.generate_embeddings(input)
+        """Generate and L2-normalize embeddings for a list of texts."""
+        raw = bedrock_client.generate_embeddings(input)
+        return _normalize_embeddings(raw)
+
+
+def _normalize_embeddings(embeddings: List[List[float]]) -> List[List[float]]:
+    """L2-normalize a list of embedding vectors in-place."""
+    normalized = []
+    for emb in embeddings:
+        arr = np.array(emb, dtype=np.float32)
+        norm = np.linalg.norm(arr)
+        if norm > 0:
+            arr = arr / norm
+        normalized.append(arr.tolist())
+    return normalized
 
 
 class VectorStore:
     """ChromaDB vector store manager."""
     
-    def __init__(self):
-        """Initialize ChromaDB with persistent storage."""
+    def __init__(self, collection_name: str = None):
+        """Initialize ChromaDB with persistent storage.
+        
+        Args:
+            collection_name: Name of the ChromaDB collection to use.
+                             Defaults to settings.collection_name if not provided.
+        """
         chroma_path = settings.get_absolute_path(settings.chroma_db_path)
+        self._collection_name = collection_name or settings.collection_name
         
         self.client = chromadb.PersistentClient(
             path=chroma_path,
@@ -34,18 +54,18 @@ class VectorStore:
         
         self.embedding_function = CustomEmbeddingFunction()
         
-        # Get or create collection - don't pass embedding function to avoid conflicts
+        # Get or create collection with cosine similarity
         try:
             self.collection = self.client.get_collection(
-                name=settings.collection_name
+                name=self._collection_name
             )
-            logger.info(f"Loaded existing collection: {settings.collection_name} ({self.collection.count()} documents)")
+            logger.info(f"Loaded existing collection: {self._collection_name} ({self.collection.count()} documents)")
         except:
             self.collection = self.client.create_collection(
-                name=settings.collection_name,
-                metadata={"description": "RAG document chunks"}
+                name=self._collection_name,
+                metadata={"hnsw:space": "cosine", "description": f"RAG collection: {self._collection_name}"}
             )
-            logger.info(f"Created new collection: {settings.collection_name}")
+            logger.info(f"Created new collection (cosine): {self._collection_name}")
     
     def add_documents(
         self,
@@ -63,7 +83,7 @@ class VectorStore:
         """
         try:
             # Generate embeddings manually (now parallelized via bedrock_client)
-            embeddings = self.embedding_function(texts)
+            embeddings = self.embedding_function(texts)  # already L2-normalized
             
             # Add to collection in smaller sub-batches to be safe (e.g., 500 at a time)
             batch_size = 500
@@ -113,10 +133,8 @@ class VectorStore:
             if threshold is None:
                 threshold = settings.similarity_threshold
             
-            # Generate query embedding
-            
-            # Generate query embedding
-            query_embedding = self.embedding_function([query])[0]
+            # Generate query embedding and normalize
+            query_embedding = self.embedding_function([query])[0]  # already normalized
             
             results = self.collection.query(
                 query_embeddings=[query_embedding],
@@ -154,6 +172,41 @@ class VectorStore:
         """Get total number of documents in collection."""
         return self.collection.count()
 
+    def reset_collection(self) -> None:
+        """Delete the collection and recreate an empty one with cosine similarity."""
+        try:
+            self.client.delete_collection(name=self._collection_name)
+            self.collection = self.client.create_collection(
+                name=self._collection_name,
+                metadata={"hnsw:space": "cosine", "description": f"RAG collection: {self._collection_name}"}
+            )
+            logger.info(f"Successfully reset collection: {self._collection_name}")
+        except Exception as e:
+            logger.error(f"Error resetting collection: {str(e)}")
+            raise
 
-# Global vector store instance
-vector_store = VectorStore()
+    def get_existing_ids(self, ids: List[str]) -> Set[str]:
+        """
+        Check which of the given IDs already exist in the collection.
+        Used as an idempotency gate before insertion.
+
+        Args:
+            ids: List of vector entry IDs to check.
+
+        Returns:
+            Set of IDs that are already present in ChromaDB.
+        """
+        try:
+            result = self.collection.get(ids=ids, include=[])
+            return set(result.get("ids", []))
+        except Exception as e:
+            logger.warning(f"Could not check existing IDs: {e}")
+            return set()
+
+
+# ── Singletons ────────────────────────────────────────────────────────────────
+# Two separate collections, fully isolated from each other:
+#   vector_store      → PDF / general document chunks   ("document_chunks")
+#   jira_vector_store → JIRA XML ticket vectors         ("jira_tickets")
+vector_store = VectorStore(collection_name=settings.collection_name)
+jira_vector_store = VectorStore(collection_name=settings.jira_collection_name)

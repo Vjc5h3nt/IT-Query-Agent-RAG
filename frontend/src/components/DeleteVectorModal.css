@@ -1,0 +1,457 @@
+/* ================================================================
+   DeleteVectorModal.css  —  fully theme-aware (light + dark)
+   ================================================================ */
+
+/* ── Overlay ────────────────────────────────────────────────────── */
+.delete-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1100;
+    backdrop-filter: blur(6px);
+    animation: dmFadeIn 0.2s ease;
+}
+
+@keyframes dmFadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+/* ── Modal card ─────────────────────────────────────────────────── */
+.delete-modal {
+    background: var(--bg-app);
+    border: 1px solid var(--border-light);
+    border-radius: 18px;
+    width: 90%;
+    max-width: 500px;
+    box-shadow: var(--shadow-md);
+    overflow: hidden;
+    animation: dmSlideIn 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+[data-theme='dark'] .delete-modal {
+    background: #1c1c1e;
+    border-color: rgba(255, 255, 255, 0.08);
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6);
+}
+
+.delete-modal-wide {
+    max-width: 580px;
+}
+
+@keyframes dmSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(18px) scale(0.97);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* ── Header ─────────────────────────────────────────────────────── */
+.delete-modal-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border-light);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--bg-sidebar);
+}
+
+[data-theme='dark'] .delete-modal-header {
+    background: #232324;
+    border-bottom-color: rgba(255, 255, 255, 0.06);
+}
+
+.delete-modal-header h3 {
+    margin: 0;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    letter-spacing: -0.01em;
+}
+
+/* Close button */
+.delete-modal-header button {
+    background: none;
+    border: none;
+    font-size: 20px;
+    color: var(--text-muted);
+    cursor: pointer;
+    width: 30px;
+    height: 30px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s, color 0.15s;
+}
+
+.delete-modal-header button:hover {
+    background: var(--bg-user-msg);
+    color: var(--text-primary);
+}
+
+/* ── Body ───────────────────────────────────────────────────────── */
+.delete-modal-content {
+    padding: 20px;
+}
+
+/* ── Store cards ─────────────────────────────────────────────────── */
+.store-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.store-card {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 16px;
+    border-radius: 12px;
+    border: 1px solid var(--border-light);
+    background: var(--bg-sidebar);
+    transition: border-color 0.18s;
+}
+
+[data-theme='dark'] .store-card {
+    background: rgba(255, 255, 255, 0.03);
+    border-color: rgba(255, 255, 255, 0.07);
+}
+
+.store-card-jira {
+    border-left: 3px solid #d97706;
+}
+
+.store-card-pdf {
+    border-left: 3px solid #6366f1;
+}
+
+.store-card-icon {
+    font-size: 26px;
+    flex-shrink: 0;
+}
+
+.store-card-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.store-card-info h4 {
+    margin: 0 0 3px;
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.store-collection-name {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin: 0 0 4px;
+}
+
+.store-collection-name code {
+    background: var(--bg-user-msg);
+    padding: 1px 5px;
+    border-radius: 4px;
+    font-family: ui-monospace, Menlo, monospace;
+}
+
+[data-theme='dark'] .store-collection-name code {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.store-count {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin: 0 0 2px;
+}
+
+.store-count strong {
+    color: var(--text-primary);
+    font-size: 15px;
+    font-weight: 700;
+}
+
+.store-sublabel {
+    font-size: 10.5px;
+    color: var(--text-muted);
+    margin-left: 4px;
+}
+
+.store-desc {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin: 0;
+}
+
+/* Per-store delete button */
+.store-delete-btn {
+    padding: 7px 12px;
+    border-radius: 7px;
+    border: 1px solid var(--border-medium);
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 12.5px;
+    font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.15s;
+    flex-shrink: 0;
+    font-family: inherit;
+}
+
+.store-delete-btn:hover:not(:disabled) {
+    background: rgba(239, 68, 68, 0.07);
+    border-color: rgba(239, 68, 68, 0.4);
+    color: #dc2626;
+}
+
+[data-theme='dark'] .store-delete-btn {
+    border-color: rgba(255, 255, 255, 0.1);
+    color: var(--text-muted);
+}
+
+[data-theme='dark'] .store-delete-btn:hover:not(:disabled) {
+    background: rgba(239, 68, 68, 0.1);
+    border-color: rgba(239, 68, 68, 0.35);
+    color: #f87171;
+}
+
+.store-delete-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+/* ── Inline confirmation panel ───────────────────────────────────── */
+.delete-confirm-panel {
+    margin-top: 12px;
+    padding: 14px 16px;
+    border-radius: 10px;
+    border: 1px solid rgba(220, 38, 38, 0.25);
+    background: rgba(220, 38, 38, 0.04);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+[data-theme='dark'] .delete-confirm-panel {
+    border-color: rgba(248, 113, 113, 0.25);
+    background: rgba(248, 113, 113, 0.05);
+}
+
+.delete-confirm-panel .warning-icon {
+    font-size: 28px;
+    text-align: center;
+}
+
+.delete-confirm-panel h4 {
+    margin: 0;
+    font-size: 0.9rem;
+    color: var(--text-primary);
+    text-align: center;
+}
+
+.delete-confirm-panel label {
+    font-size: 12.5px;
+    color: var(--text-secondary);
+    display: block;
+}
+
+/* Success banner */
+.delete-success-banner {
+    background: rgba(22, 163, 74, 0.07);
+    border: 1px solid rgba(22, 163, 74, 0.25);
+    border-radius: 8px;
+    padding: 9px 12px;
+    font-size: 12.5px;
+    color: #15803d;
+    text-align: center;
+    margin-bottom: 10px;
+}
+
+[data-theme='dark'] .delete-success-banner {
+    color: #4ade80;
+    background: rgba(74, 222, 128, 0.06);
+    border-color: rgba(74, 222, 128, 0.2);
+}
+
+/* ── Shared form elements ────────────────────────────────────────── */
+.warning-icon {
+    font-size: 44px;
+    margin-bottom: 12px;
+}
+
+.warning-text {
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.5;
+    margin-bottom: 14px;
+}
+
+.confirm-input {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--border-medium);
+    background: var(--bg-sidebar);
+    color: var(--text-primary);
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    box-sizing: border-box;
+    margin-bottom: 6px;
+    font-family: inherit;
+}
+
+[data-theme='dark'] .confirm-input {
+    background: rgba(255, 255, 255, 0.04);
+    border-color: rgba(255, 255, 255, 0.1);
+    color: var(--text-primary);
+}
+
+.confirm-input:focus {
+    border-color: #dc2626;
+    box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.15);
+}
+
+.confirm-input.input-error {
+    border-color: #dc2626;
+}
+
+.error-message {
+    display: block;
+    color: #dc2626;
+    font-size: 11.5px;
+    margin-bottom: 10px;
+    text-align: left;
+    width: 100%;
+}
+
+[data-theme='dark'] .error-message {
+    color: #f87171;
+}
+
+/* ── Action buttons ──────────────────────────────────────────────── */
+.delete-actions {
+    display: flex;
+    gap: 10px;
+    width: 100%;
+    margin-top: 4px;
+}
+
+.cancel-btn,
+.confirm-delete-btn {
+    flex: 1;
+    padding: 10px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.15s;
+    border: none;
+    font-family: inherit;
+}
+
+.cancel-btn {
+    background: var(--bg-user-msg);
+    color: var(--text-primary);
+    border: 1px solid var(--border-medium);
+}
+
+.cancel-btn:hover {
+    background: var(--border-light);
+}
+
+[data-theme='dark'] .cancel-btn {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme='dark'] .cancel-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.confirm-delete-btn {
+    background: #dc2626;
+    color: white;
+}
+
+.confirm-delete-btn:hover:not(:disabled) {
+    background: #b91c1c;
+    transform: translateY(-1px);
+}
+
+.confirm-delete-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* ── States ──────────────────────────────────────────────────────── */
+.processing-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 24px;
+    gap: 12px;
+    color: var(--text-secondary);
+}
+
+.danger-spinner {
+    width: 36px;
+    height: 36px;
+    border: 2.5px solid var(--border-medium);
+    border-top-color: #dc2626;
+    border-radius: 50%;
+    animation: dmSpin 0.85s linear infinite;
+}
+
+[data-theme='dark'] .danger-spinner {
+    border-color: rgba(255, 255, 255, 0.1);
+    border-top-color: #f87171;
+}
+
+@keyframes dmSpin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.done-btn {
+    margin-top: 12px;
+    padding: 9px 22px;
+    border-radius: 8px;
+    background: var(--bg-user-msg);
+    border: 1px solid var(--border-medium);
+    color: var(--text-primary);
+    font-size: 13px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 0.15s;
+}
+
+.done-btn:hover {
+    background: var(--border-light);
+}
+
+[data-theme='dark'] .done-btn {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme='dark'] .done-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+}

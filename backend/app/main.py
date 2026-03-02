@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from app.config import settings
 from app.models import HealthResponse
-from app.api import chat, sessions, ingestion
+from app.api import chat, sessions, ingestion, jira_ingestion
 import logging
 
 # Configure logging
@@ -24,10 +24,11 @@ async def lifespan(app: FastAPI):
     logger.info(f"Storage folder: {settings.get_absolute_path(settings.storage_folder)}")
     
     # Initialize services (they auto-initialize on import)
-    from services.vector_store import vector_store
+    from services.vector_store import vector_store, jira_vector_store
     from database.session_db import session_db
     
-    logger.info(f"Vector store initialized with {vector_store.get_collection_count()} documents")
+    logger.info(f"PDF vector store  : {vector_store.get_collection_count()} documents  (collection: '{vector_store._collection_name}')")
+    logger.info(f"JIRA vector store : {jira_vector_store.get_collection_count()} documents  (collection: '{jira_vector_store._collection_name}')")
     logger.info("Application startup complete")
     
     yield
@@ -57,6 +58,7 @@ app.add_middleware(
 app.include_router(chat.router)
 app.include_router(sessions.router)
 app.include_router(ingestion.router)
+app.include_router(jira_ingestion.router)
 
 
 @app.get("/", tags=["root"])

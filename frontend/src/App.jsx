@@ -5,6 +5,8 @@ import { useState, useEffect } from 'react';
 import Sidebar from './components/Sidebar';
 import ChatInterface from './components/ChatInterface';
 import IngestionModal from './components/IngestionModal';
+import DeleteVectorModal from './components/DeleteVectorModal';
+import JiraIngestModal from './components/JiraIngestModal';
 import * as api from './services/api';
 import './App.css';
 
@@ -17,6 +19,13 @@ function App() {
   const [ingestionModalOpen, setIngestionModalOpen] = useState(false);
   const [ingestionStatus, setIngestionStatus] = useState(null); // 'processing', 'complete', 'error'
   const [ingestionStats, setIngestionStats] = useState(null);
+
+  // Vector Store Deletion state
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [deleteStatus, setDeleteStatus] = useState('idle'); // 'idle', 'deleting', 'success', 'error'
+
+  // JIRA ingestion state
+  const [jiraModalOpen, setJiraModalOpen] = useState(false);
 
   // UI State: Theme and User Name
   const [theme, setTheme] = useState(() => {
@@ -140,6 +149,22 @@ function App() {
     }
   };
 
+  const handleDeleteVectorStore = () => {
+    setDeleteModalOpen(true);
+    setDeleteStatus('idle');
+  };
+
+  const confirmDeleteVectorStore = async () => {
+    setDeleteStatus('deleting');
+    try {
+      await api.deleteVectorStore();
+      setDeleteStatus('success');
+    } catch (error) {
+      console.error('Error deleting vector store:', error);
+      setDeleteStatus('error');
+    }
+  };
+
   const handleOpenIngestModal = () => {
     setIngestionModalOpen(true);
     setIngestionStatus(null); // 'null' shows the selection UI
@@ -214,6 +239,8 @@ function App() {
         onDeleteSession={handleDeleteSession}
         onRenameSession={handleRenameSession}
         onDeleteAllSessions={handleDeleteAllSessions}
+        onDeleteVectorStore={handleDeleteVectorStore}
+        onJiraIngest={() => setJiraModalOpen(true)}
         onIngest={handleOpenIngestModal}
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
@@ -230,8 +257,6 @@ function App() {
           onSendMessage={handleSendMessage}
           useKnowledgeBase={useKnowledgeBase}
           onToggleKnowledgeBase={() => setUseKnowledgeBase(!useKnowledgeBase)}
-          useReranking={useReranking}
-          onToggleReranking={() => setUseReranking(!useReranking)}
           userName={userName}
         />
       </div>
@@ -242,6 +267,16 @@ function App() {
         status={ingestionStatus}
         stats={ingestionStats}
         onStartIngestion={handleIngestWithStrategy}
+      />
+
+      <DeleteVectorModal
+        isOpen={deleteModalOpen}
+        onClose={() => setDeleteModalOpen(false)}
+      />
+
+      <JiraIngestModal
+        isOpen={jiraModalOpen}
+        onClose={() => setJiraModalOpen(false)}
       />
     </div>
   );

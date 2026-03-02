@@ -9,7 +9,10 @@ class Settings(BaseSettings):
     
     # AWS Configuration
     aws_region: str = "us-east-1"
-    aws_bedrock_model_id: str = "anthropic.claude-3-haiku-20240307-v1:0"
+    aws_access_key_id: str = ""
+    aws_secret_access_key: str = ""
+    aws_session_token: str = ""
+    aws_bedrock_model_id: str = "anthropic.claude-3-sonnet-20240229-v1:0"
     aws_bedrock_embedding_model_id: str = "amazon.titan-embed-text-v1"
     
     # API Configuration
@@ -35,13 +38,15 @@ class Settings(BaseSettings):
     rerank_top_k: int = 5
     top_k_stage1: int = 50
     
-    # Collection name for ChromaDB
-    collection_name: str = "document_chunks"
+    # Collection names for ChromaDB (separate collections for isolation)
+    collection_name: str = "document_chunks"       # PDF / document ingestion
+    jira_collection_name: str = "jira_tickets"     # JIRA XML ingestion
     
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
-        case_sensitive=False
+        case_sensitive=False,
+        extra="ignore"
     )
     
     def get_absolute_path(self, relative_path: str) -> str:

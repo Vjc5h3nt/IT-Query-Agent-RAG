@@ -65,4 +65,9 @@ export const getIngestionStatus = async () => {
     return response.data;
 };
 
+export const deleteVectorStore = async () => {
+    const response = await api.delete('/ingest/vector-store');
+    return response.data;
+};
+
 export default api;

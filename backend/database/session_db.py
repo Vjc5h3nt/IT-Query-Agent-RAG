@@ -256,6 +256,21 @@ class SessionDatabase:
             return docs
         finally:
             db.close()
+            
+    def delete_all_documents(self) -> int:
+        """Delete all document metadata records."""
+        db = self.get_session()
+        try:
+            count = db.query(DocumentMetadata).delete()
+            db.commit()
+            logger.info(f"Deleted all document metadata: {count} records removed")
+            return count
+        except Exception as e:
+            db.rollback()
+            logger.error(f"Error deleting all document metadata: {str(e)}")
+            raise
+        finally:
+            db.close()
 
 
 # Global database instance

@@ -13,10 +13,17 @@ class BedrockClient:
     
     def __init__(self):
         """Initialize Bedrock runtime client."""
-        self.client = boto3.client(
-            service_name='bedrock-runtime',
-            region_name=settings.aws_region
-        )
+        client_kwargs = {
+            'service_name': 'bedrock-runtime',
+            'region_name': settings.aws_region
+        }
+        if settings.aws_access_key_id:
+            client_kwargs['aws_access_key_id'] = settings.aws_access_key_id
+            client_kwargs['aws_secret_access_key'] = settings.aws_secret_access_key
+            if settings.aws_session_token:
+                client_kwargs['aws_session_token'] = settings.aws_session_token
+                
+        self.client = boto3.client(**client_kwargs)
         self.model_id = settings.aws_bedrock_model_id
         self.embedding_model_id = settings.aws_bedrock_embedding_model_id
         logger.info(f"Initialized Bedrock client with model: {self.model_id}")
@@ -149,17 +156,27 @@ class BedrockClient:
         try:
             # Build conversation with strict grounding system prompt
             if use_knowledge_base:
-                system_prompt = """You are a helpful, professional assistant that uses a knowledge base to answer questions.
+                system_prompt = """You are a highly analytical technical assistant acting as a JIRA intelligence agent. You have access to a knowledge base of IT support tickets.
 
-GROUNDING RULES:
-1. For factual questions, use ONLY the provided "Context from knowledge base".
-2. PRIORITIZE the current "Context from knowledge base" even if it contradicts your previous answers in the conversation history. The knowledge base context can change or be updated between turns.
-3. If the answer is in the current context, provide it fully, even if you previously said it wasn't available. Address EVERY part of a multi-point question.
-4. If the answer for a specific part is missing, answer the other parts and state clearly which part is unavailable in the knowledge base.
-5. If the entire answer is missing, say: "I don't have enough information in my knowledge base to answer that question."
-6. DO NOT hallucinate. Be direct and concise.
-7. You may use information from the "Conversation History" to answer questions about the session context (e.g., user's name or what was previously discussed), but strictly rely on the "Context from knowledge base" for technical answers.
-7. For casual chat or greetings, ignore the knowledge base and answer naturally. """
+STRICT GROUNDING RULES:
+1. Answer ONLY using information from the "Context from knowledge base". Do NOT use your pre-trained knowledge for technical facts.
+2. PAY ATTENTION TO DATES AND TIMES. If the user asks for "recent" issues, look at Creation Dates in the context and state them explicitly.
+3. PRIORITIZE the current context over previous turns in the conversation.
+
+RESOLUTION SYNTHESIS RULES (IMPORTANT):
+4. If asked how a ticket was resolved/fixed, look for the answer in THIS ORDER:
+   a) The "resolution_details" field (most authoritative)
+   b) The "resolution" field (e.g., "Fixed", "Done", "Won't Fix")
+   c) The COMMENTS thread — look for phrases like "confirmed fixed", "issue resolved", "working now", "Teams", "phone call", "rebooted", "restarted", "script run". Summarize what the comments say.
+   d) If the ticket status is "Done" / "Closed" / "Resolved" but comments are vague, state: "The ticket was marked as [status]. Based on the comments, [summarize any relevant activity, even informal ones like confirmation over Teams/email]."
+5. Never say "I don't have information" if the ticket IS in the context — even informal resolutions (e.g., "user confirmed fixed over Teams") should be reported as the resolution.
+6. If a specific ticket ID (like HCLSM-12345) is mentioned, focus your answer on THAT ticket's data even if other tickets are also shown.
+7. For casual chat, ignore the knowledge base and answer naturally. Do not hallucinate.
+
+FILTERING AND ORDERING RULES:
+8. When the user asks for tickets on a specific TOPIC (e.g., "PDA tickets", "VIA Supervisor tickets"), ONLY include tickets whose summary or description is genuinely about that topic. Skip tickets that are semantically nearby but belong to a different topic area.
+9. The context sources are pre-sorted by date when sorting is detected. PRESERVE the order you receive them in. Do not re-sort or shuffle them in your response. State the order you used (ascending/descending) explicitly.
+10. When the user asks for "last N" or "top N", list exactly N items maximum."""
             else:
                 system_prompt = """You are a helpful assistant. Knowledge base access is currently DISABLED.
 
@@ -211,16 +228,13 @@ RULES:
             
             # Prepare current user content
             if use_knowledge_base:
-                user_content = f"""Context from knowledge base:
-{context if context else "None"}
-
-User question: {user_message}"""
+                user_content = f"""Here is the retrieved context from the JIRA knowledge base:\n<context>\n{context if context else "None"}\n</context>\n\nPlease answer the following question based ONLY on the context above. Question:\n{user_message}"""
             else:
                 user_content = user_message
             
-            # Check if we should append or merge with last history message
+            # Add the current user query as a NEW message, or append if previous was user
             if formatted_messages and formatted_messages[-1]["role"] == "user":
-                formatted_messages[-1]["content"] += f"\n\n--- Next Question ---\n{user_content}"
+                formatted_messages[-1]["content"] += f"\n\n{user_content}"
             else:
                 formatted_messages.append({
                     "role": "user",

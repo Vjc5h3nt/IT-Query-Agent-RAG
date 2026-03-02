@@ -3,7 +3,7 @@ from fastapi import APIRouter, HTTPException
 from typing import List
 from app.models import IngestionResponse, IngestionStatus, IngestionRequest
 from services.document_processor import document_processor
-from services.vector_store import vector_store
+from services.vector_store import vector_store, jira_vector_store
 from database.session_db import session_db
 import uuid
 import logging
@@ -142,3 +142,63 @@ async def get_ingestion_status():
     except Exception as e:
         logger.error(f"Error getting ingestion status: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.delete("/vector-store")
+async def delete_vector_store():
+    """Delete all documents from the PDF/document vector store and clear metadata."""
+    try:
+        vector_store.reset_collection()
+        deleted_count = session_db.delete_all_documents()
+        logger.info(f"PDF vector store deleted, cleared {deleted_count} DB metadata records")
+        return {
+            "status": "success",
+            "message": f"PDF document store deleted ({deleted_count} metadata records cleared)",
+            "metadata_records_deleted": deleted_count
+        }
+    except Exception as e:
+        logger.error(f"Error deleting PDF vector store: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.delete("/jira-vector-store")
+async def delete_jira_vector_store():
+    """Delete all JIRA ticket vectors from the JIRA-specific collection."""
+    try:
+        count_before = jira_vector_store.get_collection_count()
+        jira_vector_store.reset_collection()
+        logger.info(f"JIRA vector store deleted ({count_before} vectors removed)")
+        return {
+            "status": "success",
+            "message": f"JIRA vector store deleted ({count_before} ticket vectors removed)",
+            "vectors_deleted": count_before
+        }
+    except Exception as e:
+        logger.error(f"Error deleting JIRA vector store: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/vector-stats")
+async def get_vector_stats():
+    """Return doc counts for both the PDF and JIRA ChromaDB collections."""
+    try:
+        from services.bm25_store import bm25_store
+        bm25_count = bm25_store.count() if bm25_store.is_ready() else 0
+    except Exception:
+        bm25_count = 0
+
+    return {
+        "pdf_collection": {
+            "name": vector_store._collection_name,
+            "count": vector_store.get_collection_count(),
+            "description": "PDF and general document chunks"
+        },
+        "jira_collection": {
+            "name": jira_vector_store._collection_name,
+            "count": jira_vector_store.get_collection_count(),
+            "description": "JIRA XML ticket vectors (symptom + resolution)"
+        },
+        "bm25_index": {
+            "count": bm25_count,
+            "description": "OpenSearch BM25 keyword index (JIRA tickets)"
+        }
+    }

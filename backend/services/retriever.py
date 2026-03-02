@@ -15,13 +15,14 @@ class Retriever(ABC):
     """Abstract base class for retrievers."""
     
     @abstractmethod
-    def retrieve(self, query: str, top_k: int) -> Dict[str, Any]:
+    def retrieve(self, query: str, top_k: int, filter_dict: dict = None) -> Dict[str, Any]:
         """
         Retrieve documents matching the query.
         
         Args:
             query: User search query
             top_k: Number of final results to return
+            filter_dict: Optional ChromaDB metadata filter ($and/$eq format)
             
         Returns:
             Dictionary containing 'documents' (list of strings) and 'metadatas' (list of dicts)
@@ -38,10 +39,10 @@ class VectorRetriever(Retriever):
     def __init__(self, vector_store):
         self.vector_store = vector_store
         
-    def retrieve(self, query: str, top_k: int) -> Dict[str, Any]:
-        """Direct vector similarity search."""
+    def retrieve(self, query: str, top_k: int, filter_dict: dict = None) -> Dict[str, Any]:
+        """Direct vector similarity search with optional metadata pre-filter."""
         logger.info(f"VectorRetriever executing search for: {query} (k={top_k})")
-        return self.vector_store.search(query, top_k=top_k)
+        return self.vector_store.search(query, top_k=top_k, filter_dict=filter_dict)
 
 
 class CrossEncoderRetriever(Retriever):
@@ -51,7 +52,7 @@ class CrossEncoderRetriever(Retriever):
     Stage 2: Rerank candidates using a Cross-Encoder model.
     """
     
-    def __init__(self, vector_store, model_name: str = "cross-encoder/ms-marco-MiniLM-L-6-v2"):
+    def __init__(self, vector_store, model_name: str = "cross-encoder/ms-marco-MiniLM-L-12-v2"):
         from app.config import settings
         self.vector_store = vector_store
         self.model_name = model_name
@@ -71,29 +72,57 @@ class CrossEncoderRetriever(Retriever):
                 raise e
         return _GLOBAL_MODEL_CACHE[self.model_name]
         
-    def retrieve(self, query: str, top_k: int) -> Dict[str, Any]:
-        """Retrieve candidates and rerank them with detailed audit logging."""
+    def retrieve(self, query: str, top_k: int, filter_dict: dict = None,
+                 precomputed_candidates: dict = None) -> Dict[str, Any]:
+        """Retrieve candidates and rerank them with detailed audit logging.
+        
+        Args:
+            precomputed_candidates: If provided (from HybridRetriever), skip stage 1
+                                    vector search and rerank these candidates directly.
+        """
         import time
         start_time = time.time()
         
-        # Stage 1: Vector Search (Candidate Generation)
-        logger.info(f"🔍 [Rerank] Stage 1: Fetching {self.stage1_k} candidates from Vector Store")
-        candidates = self.vector_store.search(query, top_k=self.stage1_k, threshold=1000.0)
-        
-        if not candidates['documents']:
-            return candidates
+        if precomputed_candidates is not None:
+            # Hybrid path: candidates already fused by HybridRetriever
+            raw_docs = precomputed_candidates.get("documents", [])
+            raw_metas = precomputed_candidates.get("metadatas", [])
+            if not raw_docs:
+                return {"documents": [], "metadatas": []}
+            docs = raw_docs
+            metadatas = raw_metas
+            logger.info(f"🔀 [Rerank] Using {len(docs)} pre-fused hybrid candidates (skipping stage 1)")
+        else:
+            # Standard path: vector search for candidates
+            logger.info(f"🔍 [Rerank] Stage 1: Fetching {self.stage1_k} candidates from Vector Store")
+            candidates = self.vector_store.search(query, top_k=self.stage1_k, threshold=1000.0, filter_dict=filter_dict)
             
-        docs = candidates['documents'][0] if isinstance(candidates['documents'][0], list) else candidates['documents']
-        metadatas = candidates['metadatas'][0] if isinstance(candidates['metadatas'][0], list) else candidates['metadatas']
-        
-        if len(docs) == 0:
-            return {'documents': [], 'metadatas': []}
+            if not candidates['documents']:
+                return candidates
+                
+            docs = candidates['documents'][0] if isinstance(candidates['documents'][0], list) else candidates['documents']
+            metadatas = candidates['metadatas'][0] if isinstance(candidates['metadatas'][0], list) else candidates['metadatas']
+            
+            if len(docs) == 0:
+                return {'documents': [], 'metadatas': []}
 
-        # Stage 2: Reranking
-        logger.info(f"🧠 [Rerank] Stage 2: Passing {len(docs)} candidates to Cross-Encoder")
+
+        # Stage 2: Reranking with structured input
+        # Structured format helps the cross-encoder compare query vs ticket fields explicitly.
+        logger.info(f"🧠 [Rerank] Stage 2: Passing {len(docs)} candidates to Cross-Encoder ({self.model_name})")
         
-        # Prepare pairs for scoring: (query, doc_text)
-        pairs = [[query, doc_text] for doc_text in docs]
+        def _make_rerank_input(query: str, doc_text: str, metadata: dict) -> str:
+            """Build structured cross-encoder input for better IT ticket scoring."""
+            ticket_id = metadata.get('ticket_id', metadata.get('filename', ''))
+            vector_type = metadata.get('vector_type', '')
+            header = f"[TICKET {ticket_id}{'|' + vector_type if vector_type else ''}]"
+            return f"[QUERY]\n{query}\n\n{header}\n{doc_text}"
+
+        # Prepare structured pairs for scoring
+        pairs = [
+            [query, _make_rerank_input(query, doc_text, metadatas[idx])]
+            for idx, doc_text in enumerate(docs)
+        ]
         
         # Score pairs
         scores = self.model.predict(pairs)
@@ -118,9 +147,13 @@ class CrossEncoderRetriever(Retriever):
             jump = res['initial_rank'] - new_rank
             arrow = "↑" if jump > 0 else ("↓" if jump < 0 else "-")
             jump_val = abs(jump) if jump != 0 else ""
-            
-            fname = res['metadata'].get('filename', 'Unknown')[:20]
-            logger.info(f"Final Rank {new_rank}: {fname}... [Score: {res['score']:.4f}] (Was Rank {res['initial_rank']} {arrow}{jump_val})")
+            # Show ticket_id for JIRA results, fall back to filename for PDFs
+            label = (
+                res['metadata'].get('ticket_id')
+                or res['metadata'].get('filename', 'Unknown')
+            )[:24]
+            vtype = res['metadata'].get('vector_type', '')
+            logger.info(f"Final Rank {new_rank}: {label}[{vtype}] [Score: {res['score']:.4f}] (Was Rank {res['initial_rank']} {arrow}{jump_val})")
         
         # Select final top_k
         final_results = scored_results[:top_k]
@@ -131,8 +164,10 @@ class CrossEncoderRetriever(Retriever):
                 "initial_rank": r["initial_rank"],
                 "final_rank": i + 1,
                 "score": r["score"],
+                "ticket_id": r["metadata"].get("ticket_id", ""),
                 "filename": r["metadata"].get("filename", "Unknown"),
-                "page": str(r["metadata"].get("page", "N/A"))
+                "page": str(r["metadata"].get("page", "N/A")),
+                "vector_type": r["metadata"].get("vector_type", ""),
             }
             for i, r in enumerate(final_results)
         ]

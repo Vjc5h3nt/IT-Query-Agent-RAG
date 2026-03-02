@@ -12,3 +12,7 @@ pydantic-settings
 pypdf
 python-docx
 sentence-transformers
+numpy
+lxml
+beautifulsoup4
+opensearch-py>=2.3.0
