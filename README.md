@@ -1,4 +1,4 @@
-# RAG Chatbot with Session Memory and AWS Bedrock
+# RAG Chatbot with Session Memory and AWS Bedrock - Last updated 02/2026
 
 A production-ready RAG (Retrieval Augmented Generation) chatbot system with multi-session support, rolling memory management, and strict document grounding using AWS Bedrock.
 
