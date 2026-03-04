@@ -70,7 +70,9 @@ class SessionManager:
                     "role": m.role,
                     "content": m.content,
                     "timestamp": m.timestamp,
-                    "rerank_summary": json.loads(m.rerank_summary) if m.rerank_summary else None
+                    "rerank_summary": json.loads(m.rerank_summary) if m.rerank_summary else None,
+                    "metrics": json.loads(m.metrics) if getattr(m, 'metrics', None) else None,
+                    "citations": json.loads(m.citations) if getattr(m, 'citations', None) else None
                 }
                 for m in messages
             ]
@@ -212,12 +214,12 @@ class SessionManager:
         
         logger.info(f"Added user message to session {session_id}")
     
-    def add_assistant_message(self, session_id: str, message: str, rerank_summary: list = None) -> None:
+    def add_assistant_message(self, session_id: str, message: str, rerank_summary: list = None, metrics: dict = None, citations: list = None) -> None:
         """
         Add assistant message to session with optional audit data.
         """
         # Add to database
-        session_db.add_message(session_id, "assistant", message, rerank_summary=rerank_summary)
+        session_db.add_message(session_id, "assistant", message, rerank_summary=rerank_summary, metrics=metrics, citations=citations)
         
         # Add to memory cache
         memory = self._get_or_create_memory(session_id)

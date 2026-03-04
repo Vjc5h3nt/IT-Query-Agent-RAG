@@ -1,6 +1,6 @@
 """Chat API endpoints."""
 from fastapi import APIRouter, HTTPException
-from app.models import ChatRequest, ChatResponse, ChatMessage
+from app.models import ChatRequest, ChatResponse, ChatMessage, ResponseMetrics
 from services.rag_engine import rag_engine
 from services.session_manager import session_manager
 from datetime import datetime
@@ -49,17 +49,27 @@ async def send_message(request: ChatRequest):
                 {"rules": ["User likes short, direct language", "User only speaks English & Python"]}
             )
 
-        # Generate RAG response
-        answer, sources, rerank_summary = rag_engine.chat(
+        # Generate RAG response (returns 5-tuple)
+        answer, sources, rerank_summary, raw_metrics, citations = rag_engine.chat(
             query=request.message,
             session_id=request.session_id,
             conversation_history=conversation_history,
             use_knowledge_base=request.use_knowledge_base,
             use_reranking=request.use_reranking
         )
+
+        # Build typed metrics object
+        metrics_obj  = ResponseMetrics(**raw_metrics) if raw_metrics else None
+        metrics_dict = raw_metrics
         
         # Add assistant message to session
-        session_manager.add_assistant_message(request.session_id, answer, rerank_summary=rerank_summary)
+        session_manager.add_assistant_message(
+            request.session_id, 
+            answer, 
+            rerank_summary=rerank_summary,
+            metrics=metrics_dict,
+            citations=citations
+        )
         
         # Create response
         user_msg = ChatMessage(
@@ -71,15 +81,19 @@ async def send_message(request: ChatRequest):
         assistant_msg = ChatMessage(
             role="assistant",
             content=answer,
-            timestamp=datetime.utcnow()
+            timestamp=datetime.utcnow(),
+            metrics=metrics_dict,
+            citations=citations
         )
-        
+
         response = ChatResponse(
             session_id=request.session_id,
             user_message=user_msg,
             assistant_message=assistant_msg,
             sources=sources,
-            rerank_summary=rerank_summary
+            rerank_summary=rerank_summary,
+            metrics=metrics_obj,
+            citations=citations
         )
         
         logger.info(f"Chat response generated for session {request.session_id}")

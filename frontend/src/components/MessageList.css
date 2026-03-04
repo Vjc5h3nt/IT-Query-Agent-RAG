@@ -197,43 +197,391 @@
     background: var(--border-divider);
 }
 
-.message-sources {
-    margin-top: 12px;
-    padding: 12px 16px;
-    background: var(--bg-input);
-    border-radius: 8px;
-    border: 1px solid var(--border-divider);
-    width: fit-content;
-    max-width: 100%;
-    box-shadow: var(--shadow-sm);
+/* ── Sources + Audit row ─────────────────────────────────────────── */
+.msg-meta-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 10px;
+    flex-wrap: wrap;
 }
 
-[data-theme='light'] .message-sources {
-    background: #ffffff;
-}
-
-.sources-title {
-    font-size: 0.7rem;
-    font-weight: 700;
-    text-transform: uppercase;
+/* Sources toggle chip */
+.sources-toggle-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    border: 1px solid var(--border-medium);
+    background: transparent;
     color: var(--text-muted);
-    margin-bottom: 8px;
-    letter-spacing: 0.05em;
+    font-size: 11.5px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    font-family: inherit;
+    letter-spacing: 0.01em;
+}
+
+.sources-toggle-chip:hover {
+    background: var(--bg-user-msg);
+    color: var(--text-secondary);
+    border-color: var(--text-muted);
+}
+
+[data-theme='dark'] .sources-toggle-chip {
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme='dark'] .sources-toggle-chip:hover {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.2);
+    color: var(--text-secondary);
+}
+
+.sources-toggle-chip .chevron {
+    transition: transform 0.2s ease;
+    opacity: 0.7;
+}
+
+.sources-toggle-chip.open .chevron {
+    transform: rotate(180deg);
+}
+
+/* Audit chip — same visual weight as sources chip */
+.audit-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    border: 1px solid var(--border-medium);
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 11.5px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    font-family: inherit;
+    letter-spacing: 0.01em;
+}
+
+.audit-chip:hover {
+    background: var(--bg-user-msg);
+    color: var(--text-secondary);
+    border-color: var(--text-muted);
+}
+
+[data-theme='dark'] .audit-chip {
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme='dark'] .audit-chip:hover {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.2);
+    color: var(--text-secondary);
+}
+
+/* ── Metrics chip ─────────────────────────────────────────────────────────── */
+.metrics-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    border: 1px solid rgba(99, 102, 241, 0.3);
+    background: rgba(99, 102, 241, 0.06);
+    color: #6366f1;
+    font-size: 11.5px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    font-family: inherit;
+    letter-spacing: 0.01em;
+}
+
+.metrics-chip:hover,
+.metrics-chip.active {
+    background: rgba(99, 102, 241, 0.14);
+    border-color: rgba(99, 102, 241, 0.5);
+}
+
+[data-theme='dark'] .metrics-chip {
+    border-color: rgba(165, 180, 252, 0.25);
+    background: rgba(99, 102, 241, 0.1);
+    color: #a5b4fc;
+}
+
+[data-theme='dark'] .metrics-chip:hover {
+    background: rgba(99, 102, 241, 0.2);
+    border-color: rgba(165, 180, 252, 0.4);
+}
+
+/* ── Citations chip ─────────────────────────────────────────────────────── */
+.citations-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    border: 1px solid rgba(139, 92, 246, 0.3);
+    background: rgba(139, 92, 246, 0.06);
+    color: #8b5cf6;
+    font-size: 11.5px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    font-family: inherit;
+    letter-spacing: 0.01em;
+}
+
+.citations-chip:hover {
+    background: rgba(139, 92, 246, 0.14);
+    border-color: rgba(139, 92, 246, 0.5);
+}
+
+[data-theme='dark'] .citations-chip {
+    border-color: rgba(196, 181, 253, 0.25);
+    background: rgba(139, 92, 246, 0.1);
+    color: #c4b5fd;
+}
+
+[data-theme='dark'] .citations-chip:hover {
+    background: rgba(139, 92, 246, 0.2);
+    border-color: rgba(196, 181, 253, 0.4);
+}
+
+/* ── Metrics inline popup ───────────────────────────────────────────────── */
+.metrics-popup {
+    margin-top: 8px;
+    border-radius: 12px;
+    border: 1px solid rgba(99, 102, 241, 0.2);
+    background: var(--bg-base, #fff);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.09);
+    overflow: hidden;
+    animation: fadeIn 0.18s ease;
+}
+
+[data-theme='dark'] .metrics-popup {
+    background: #1a1a2e;
+    border-color: rgba(165, 180, 252, 0.15);
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.35);
+}
+
+.metrics-popup-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px 8px;
+    border-bottom: 1px solid rgba(99, 102, 241, 0.12);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    color: #6366f1;
+}
+
+[data-theme='dark'] .metrics-popup-header {
+    color: #a5b4fc;
+    border-bottom-color: rgba(165, 180, 252, 0.12);
+}
+
+.metrics-close {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+    color: var(--text-muted, #9ca3af);
+    line-height: 1;
+    padding: 0 2px;
+    transition: color 0.15s ease;
+}
+
+.metrics-close:hover {
+    color: var(--text-primary, #111827);
+}
+
+.metrics-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 0;
+}
+
+.metrics-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 12px 10px;
+    border-right: 1px solid var(--border-medium, #e5e7eb);
+    border-bottom: 1px solid var(--border-medium, #e5e7eb);
+}
+
+.metrics-item:nth-child(3n) {
+    border-right: none;
+}
+
+.metrics-item.full-width {
+    grid-column: 1 / -1;
+    flex-direction: row;
+    justify-content: space-between;
+    padding: 9px 14px;
+    border-right: none;
+}
+
+[data-theme='dark'] .metrics-item {
+    border-color: rgba(255, 255, 255, 0.07);
+}
+
+.metrics-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-muted, #9ca3af);
+    margin-bottom: 4px;
+}
+
+.metrics-item.full-width .metrics-label {
+    margin-bottom: 0;
+}
+
+.metrics-value {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text-primary, #111827);
+    font-variant-numeric: tabular-nums;
+}
+
+.metrics-value.highlight {
+    color: #6366f1;
+    font-size: 16px;
+}
+
+[data-theme='dark'] .metrics-value {
+    color: #f0f0f5;
+}
+
+[data-theme='dark'] .metrics-value.highlight {
+    color: #a5b4fc;
+}
+
+.metrics-badge {
+    font-size: 11.5px;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 20px;
+}
+
+.badge-rag {
+    background: rgba(99, 102, 241, 0.1);
+    color: #6366f1;
+}
+
+.badge-casual {
+    background: rgba(16, 185, 129, 0.1);
+    color: #059669;
+}
+
+[data-theme='dark'] .badge-rag {
+    background: rgba(165, 180, 252, 0.15);
+    color: #a5b4fc;
+}
+
+[data-theme='dark'] .badge-casual {
+    background: rgba(16, 185, 129, 0.15);
+    color: #6ee7b7;
+}
+
+/* Expanded sources list */
+.sources-expanded {
+    margin-top: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    animation: fadeIn 0.18s ease;
 }
 
 .source-tag {
-    background: var(--bg-user-msg);
-    padding: 3px 8px;
-    border-radius: 4px;
-    border: 1px solid var(--border-divider);
-    font-size: 0.75rem;
-    color: var(--color-brand-primary);
-    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 10px;
+    border-radius: 6px;
+    background: var(--bg-sidebar);
+    border: 1px solid var(--border-light);
+    font-size: 12px;
+    color: var(--text-secondary);
+    font-weight: 400;
 }
 
 [data-theme='dark'] .source-tag {
-    background: #1B1F26;
-    color: var(--icon-active);
+    background: rgba(255, 255, 255, 0.04);
+    border-color: rgba(255, 255, 255, 0.07);
+    color: var(--text-muted);
+}
+
+.source-index {
+    font-size: 10px;
+    font-weight: 700;
+    background: var(--border-medium);
+    color: var(--text-primary);
+    padding: 2px 6px;
+    border-radius: 4px;
+    min-width: 28px;
+    text-align: center;
+}
+
+[data-theme='dark'] .source-index {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.source-label {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* ── Citations (Perplexity style) ─────────────────────────────────────────── */
+.citation-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+    height: 16px;
+    background: var(--bg-user-msg);
+    border: 1px solid var(--border-medium);
+    color: var(--text-secondary);
+    border-radius: 10px;
+    font-size: 8px;
+    font-weight: 800;
+    margin: 0 1px 0 2px;
+    padding: 0 4px;
+    cursor: pointer;
+    vertical-align: baseline;
+    position: relative;
+    top: -5px;
+    /* Superscript offset */
+    transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+    user-select: none;
+    flex-shrink: 0;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+[data-theme='dark'] .citation-badge {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.15);
+    color: var(--text-muted);
+}
+
+.citation-badge:hover {
+    background: var(--color-brand-primary);
+    color: white;
+    border-color: var(--color-brand-primary);
+    transform: scale(1.15) translateY(-1px);
+    box-shadow: 0 4px 10px rgba(99, 102, 241, 0.3);
+    z-index: 10;
 }
 
 .message-footer {
@@ -402,42 +750,8 @@
     /* No divider while loading */
 }
 
-/* Rerank Audit UI */
-.btn-rerank-audit {
-    background: none;
-    border: none;
-    padding: 0;
-    cursor: pointer;
-    margin-left: 4px;
-    display: flex;
-    align-items: center;
-}
+/* Old audit button styles replaced by .audit-chip above */
 
-.audit-icon-bw {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    background: #000;
-    color: #fff;
-    padding: 2px 6px;
-    border-radius: 4px;
-    font-size: 10px;
-    font-weight: 700;
-    text-transform: uppercase;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-[data-theme='light'] .audit-icon-bw {
-    background: #f0f0f0;
-    color: #333;
-    border: 1px solid #ddd;
-}
-
-.audit-icon-bw:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-    background: #333;
-}
 
 .rerank-audit-overlay {
     position: fixed;

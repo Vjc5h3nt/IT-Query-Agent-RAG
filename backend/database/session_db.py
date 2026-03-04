@@ -35,6 +35,8 @@ class Message(Base):
     content = Column(Text, nullable=False)
     timestamp = Column(DateTime, default=datetime.utcnow)
     rerank_summary = Column(Text, nullable=True)  # JSON string of auditing data
+    metrics = Column(Text, nullable=True)  # JSON string of performance metrics
+    citations = Column(Text, nullable=True)  # JSON string of detailed citations
     
     # Relationship to session
     session = relationship("ChatSession", back_populates="messages")
@@ -72,7 +74,13 @@ class SessionDatabase:
                 if 'rerank_summary' not in columns:
                     logger.info("Migrating database: adding rerank_summary column to messages table")
                     conn.execute(text("ALTER TABLE messages ADD COLUMN rerank_summary TEXT"))
-                    conn.commit()
+                if 'metrics' not in columns:
+                    logger.info("Migrating database: adding metrics column to messages table")
+                    conn.execute(text("ALTER TABLE messages ADD COLUMN metrics TEXT"))
+                if 'citations' not in columns:
+                    logger.info("Migrating database: adding citations column to messages table")
+                    conn.execute(text("ALTER TABLE messages ADD COLUMN citations TEXT"))
+                conn.commit()
         except Exception as e:
             logger.warning(f"Database migration check failed (might be fine if already migrated): {e}")
 
@@ -145,17 +153,22 @@ class SessionDatabase:
     
     # ===== Message Methods =====
     
-    def add_message(self, session_id: str, role: str, content: str, rerank_summary: list = None) -> Message:
-        """Add a message to a session with optional reranking audit data."""
+    def add_message(self, session_id: str, role: str, content: str, rerank_summary: list = None, metrics: dict = None, citations: list = None) -> Message:
+        """Add a message to a session with optional metadata."""
         import json
         db = self.get_session()
         try:
             summary_json = json.dumps(rerank_summary) if rerank_summary else None
+            metrics_json = json.dumps(metrics) if metrics else None
+            citations_json = json.dumps(citations) if citations else None
+            
             message = Message(
                 session_id=session_id, 
                 role=role, 
                 content=content,
-                rerank_summary=summary_json
+                rerank_summary=summary_json,
+                metrics=metrics_json,
+                citations=citations_json
             )
             db.add(message)
             

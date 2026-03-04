@@ -155,8 +155,14 @@ class BedrockClient:
         """
         try:
             # Build conversation with strict grounding system prompt
-            if use_knowledge_base:
-                system_prompt = """You are a highly analytical technical assistant acting as a JIRA intelligence agent. You have access to a knowledge base of IT support tickets.
+            if use_knowledge_base and context:
+                system_prompt = """You are IT Query Specialist, an intelligent assistant built by the Perplex Squad team to help analyze IT support tickets and technical documentation.
+
+IDENTITY RULE (HIGHEST PRIORITY):
+- When asked "who are you", "what are you", "who created you", "who made you", or any variation, you MUST respond with exactly:
+  "I'm IT Query Specialist, built by the Perplex Squad team to help you navigate IT support tickets and technical documentation."
+- NEVER mention Anthropic, Claude, OpenAI, Google, Amazon, or any other AI company in your responses.
+- You are IT Query Specialist. That is your only identity.
 
 STRICT GROUNDING RULES:
 1. Answer ONLY using information from the "Context from knowledge base". Do NOT use your pre-trained knowledge for technical facts.
@@ -171,19 +177,46 @@ RESOLUTION SYNTHESIS RULES (IMPORTANT):
    d) If the ticket status is "Done" / "Closed" / "Resolved" but comments are vague, state: "The ticket was marked as [status]. Based on the comments, [summarize any relevant activity, even informal ones like confirmation over Teams/email]."
 5. Never say "I don't have information" if the ticket IS in the context — even informal resolutions (e.g., "user confirmed fixed over Teams") should be reported as the resolution.
 6. If a specific ticket ID (like HCLSM-12345) is mentioned, focus your answer on THAT ticket's data even if other tickets are also shown.
-7. For casual chat, ignore the knowledge base and answer naturally. Do not hallucinate.
 
 FILTERING AND ORDERING RULES:
-8. When the user asks for tickets on a specific TOPIC (e.g., "PDA tickets", "VIA Supervisor tickets"), ONLY include tickets whose summary or description is genuinely about that topic. Skip tickets that are semantically nearby but belong to a different topic area.
-9. The context sources are pre-sorted by date when sorting is detected. PRESERVE the order you receive them in. Do not re-sort or shuffle them in your response. State the order you used (ascending/descending) explicitly.
-10. When the user asks for "last N" or "top N", list exactly N items maximum."""
+7. When the user asks for tickets on a specific TOPIC (e.g., "PDA tickets", "VIA Supervisor tickets"), ONLY include tickets whose summary or description is genuinely about that topic. Skip tickets that are semantically nearby but belong to a different topic area.
+8. The context sources are pre-sorted by date when sorting is detected. PRESERVE the order you receive them in. Do not re-sort or shuffle them in your response. State the order you used (ascending/descending) explicitly.
+9. When the user asks for "last N" or "top N", list exactly N items maximum.
+
+LIST CONSISTENCY RULES (CRITICAL):
+10. When listing items (report names, ticket IDs, etc.), NEVER duplicate the same item. Each entry must be unique.
+11. NEVER fabricate, invent, or hallucinate items to reach a number the user requests. Only list items explicitly present in the context.
+12. If the context contains N items and the user asks for more, state honestly: "Based on the available data, I found exactly N [items]. Here they are:" and list all N without repetition.
+13. Always count final list items before responding and verify no duplicates exist.
+
+GRANULAR CITATION RULE:
+14. Every factual claim or list item MUST be followed by a granular citation in the format [S(number)], where 'number' corresponds to the Source index provided in the context (e.g., "[Source S3: ...]" should be cited as [S3]).
+15. If multiple sources support a claim, use multiple citations like [S1][S3].
+16. Do NOT invent source numbers. Only use numbers present in the provided context markers (e.g., S1, S2, etc.)."""
             else:
-                system_prompt = """You are a helpful assistant. Knowledge base access is currently DISABLED.
+                # No context / casual query — respond naturally as the agent persona
+                system_prompt = """You are IT Query Specialist, built by the Perplex Squad team.
+
+IDENTITY RULE (HIGHEST PRIORITY):
+- When asked "who are you", "what are you", "who created you", "who made you", or any variation, you MUST respond:
+  "I'm IT Query Specialist, built by the Perplex Squad team to help you navigate IT support tickets and technical documentation."
+- NEVER mention Anthropic, Claude, OpenAI, Google, Amazon, or any other AI company in your responses.
+
+Your role is to help users search through IT support tickets and technical documentation.
+For casual conversations and greetings, respond naturally and warmly.
+For IT questions without context, let the user know you can help once they ask a specific question.
+Never fabricate ticket data or technical facts."""
+
+            if not use_knowledge_base:
+                system_prompt = """You are IT Query Specialist, built by the Perplex Squad team. Knowledge base access is currently DISABLED.
+
+IDENTITY RULE (HIGHEST PRIORITY):
+- NEVER mention Anthropic, Claude, OpenAI, or any other AI company. You are IT Query Specialist by Perplex Squad.
 
 RULES:
-1. For greetings or casual chat, answer naturally.
-2. For factual questions, politely state: "Please enable the Knowledge Base in the UI to ask questions about the documents."
-3. DO NOT use internal knowledge for factual questions when access is disabled."""
+1. For greetings or casual chat, respond naturally and warmly.
+2. For IT-specific factual questions, politely state: "Please enable the Knowledge Base toggle to search through tickets and documents."
+3. Never make up ticket data or technical facts."""
 
             # Format messages for Claude with alternating roles strictly enforced
             formatted_messages = []
@@ -244,25 +277,39 @@ RULES:
             # Claude 3 request format
             request_body = json.dumps({
                 "anthropic_version": "bedrock-2023-05-31",
-                "max_tokens": 2000,
+                "max_tokens": 4096,
                 "temperature": 0.1,  # Low temperature for more factual responses
                 "system": system_prompt,
                 "messages": formatted_messages
             })
-            
+
+            import time
+            gen_start = time.time()
             response = self.client.invoke_model(
                 modelId=self.model_id,
                 body=request_body,
                 contentType='application/json',
                 accept='application/json'
             )
-            
+            generation_s = round(time.time() - gen_start, 3)
+
             response_body = json.loads(response['body'].read())
-            
+
             # Extract text from Claude response
             assistant_message = response_body.get('content', [{}])[0].get('text', '')
-            
-            return assistant_message
+
+            # Extract token counts from Claude's usage block
+            usage = response_body.get('usage', {})
+            in_tok  = usage.get('input_tokens', 0)
+            out_tok = usage.get('output_tokens', 0)
+            gen_metrics = {
+                "generation_s":  generation_s,
+                "input_tokens":  in_tok,
+                "output_tokens": out_tok,
+                "total_tokens":  in_tok + out_tok,
+            }
+
+            return assistant_message, gen_metrics
             
         except Exception as e:
             logger.error(f"Error generating response: {str(e)}")

@@ -41,6 +41,8 @@ function ChatInterface({ session, onSendMessage, useKnowledgeBase, onToggleKnowl
                 timestamp: response.assistant_message.timestamp,
                 sources: response.sources,
                 rerank_summary: response.rerank_summary,
+                metrics: response.metrics,
+                citations: response.citations,
             };
 
             setMessages((prev) => [...prev, assistantMessage]);
@@ -65,22 +67,36 @@ function ChatInterface({ session, onSendMessage, useKnowledgeBase, onToggleKnowl
         }
     };
 
+
+
     return (
         <div className="chat-interface">
             <div className="chat-header">
                 <div className="header-left">
-                    <h3 className="session-title">{session ? session.name : 'New Conversation'}</h3>
+                    <div className="header-indicator">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                        </svg>
+                    </div>
+                    <h3 className="session-title">{session ? session.name : 'New Chat'}</h3>
                 </div>
-                <div className="chat-controls">
+
+                <div className="chat-actions">
                     <div
-                        className={`kb-toggle ${useKnowledgeBase ? 'enabled' : ''}`}
+                        className={`kb-switch ${useKnowledgeBase ? 'active' : ''}`}
                         onClick={onToggleKnowledgeBase}
-                        title={useKnowledgeBase ? "Knowledge Base ON" : "Knowledge Base OFF"}
+                        title={useKnowledgeBase ? "Search is grounded in Knowledge Base" : "Search is general"}
                     >
-                        <span className="kb-icon">📚</span>
-                        <span className="kb-text">Knowledge Base</span>
-                        <div className="toggle-switch">
-                            <div className="toggle-knob"></div>
+                        <div className="kb-switch-label">
+                            <svg className="kb-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                                <line x1="8" y1="21" x2="16" y2="21"></line>
+                                <line x1="12" y1="17" x2="12" y2="21"></line>
+                            </svg>
+                            <span>Knowledge Base</span>
+                        </div>
+                        <div className="kb-switch-track">
+                            <div className="kb-switch-thumb"></div>
                         </div>
                     </div>
                 </div>
