@@ -104,18 +104,18 @@
 
 .author-name {
     font-weight: 600;
-    font-size: 14px;
+    font-size: 13px;
     color: var(--text-primary);
 }
 
 .plus-badge {
     font-weight: 500;
-    font-size: 12px;
+    font-size: 13px;
     color: var(--text-muted);
 }
 
 .message-time {
-    font-size: 12px;
+    font-size: 13px;
     color: var(--text-muted);
 }
 
@@ -133,6 +133,7 @@
 .message-text {
     line-height: 1.6;
     font-size: 15px;
+    font-weight: 400;
     word-wrap: break-word;
     max-width: 800px;
 }
@@ -143,6 +144,46 @@
 
 .message-text p:last-child {
     margin-bottom: 0;
+}
+
+.message-text h1,
+.message-text h2,
+.message-text h3,
+.message-text h4 {
+    font-size: 18px;
+    font-weight: 600;
+    margin: 1.5rem 0 1rem;
+    line-height: 1.4;
+}
+
+.message-text code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    font-size: 14px;
+    background: rgba(0, 0, 0, 0.05);
+    padding: 0.2em 0.4em;
+    border-radius: 4px;
+}
+
+[data-theme='dark'] .message-text code {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.message-text pre {
+    margin: 1rem 0;
+    background: #1e1e1e;
+    color: #d4d4d4;
+    padding: 1rem;
+    border-radius: 8px;
+    overflow-x: auto;
+}
+
+.message-text pre code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    font-size: 14px;
+    background: transparent;
+    padding: 0;
+    border-radius: 0;
+    color: inherit;
 }
 
 .message-text ul,
