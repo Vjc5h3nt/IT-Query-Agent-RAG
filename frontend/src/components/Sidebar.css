@@ -426,13 +426,28 @@
 }
 
 .tool-icon {
-    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
     flex-shrink: 0;
-    opacity: 0.75;
+    opacity: 0.6;
+    /* Opaque / BW looking */
+    transition: opacity 0.2s ease;
+    color: var(--text-primary);
 }
 
 .btn-sidebar-tool:hover .tool-icon {
     opacity: 1;
+}
+
+[data-theme='dark'] .tool-icon {
+    opacity: 0.5;
+}
+
+[data-theme='dark'] .btn-sidebar-tool:hover .tool-icon {
+    opacity: 0.9;
 }
 
 .sidebar-footer {

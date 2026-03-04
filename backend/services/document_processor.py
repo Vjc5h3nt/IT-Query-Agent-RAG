@@ -4,12 +4,6 @@ import hashlib
 from pathlib import Path
 from typing import List, Dict, Tuple
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_community.document_loaders import (
-    PyPDFLoader,
-    TextLoader,
-    UnstructuredMarkdownLoader,
-    Docx2txtLoader
-)
 from app.config import settings
 from database.session_db import session_db
 import logging
@@ -22,12 +16,15 @@ class DocumentProcessor:
     
     def __init__(self):
         """Initialize document processor."""
-        # Use RecursiveCharacterTextSplitter for better chunking
+        from docling.document_converter import DocumentConverter
+        self.converter = DocumentConverter()
+        
+        # Use RecursiveCharacterTextSplitter for better chunking of markdown
         self.text_splitter = RecursiveCharacterTextSplitter(
             chunk_size=settings.chunk_size,
             chunk_overlap=settings.chunk_overlap,
             length_function=len,
-            separators=["\n\n", "\n", ". ", " ", ""]
+            separators=["\n## ", "\n# ", "\n\n", "\n", ". ", " ", ""]
         )
     
     def calculate_file_hash(self, file_path: str) -> str:
@@ -60,8 +57,8 @@ class DocumentProcessor:
             logger.warning(f"Data folder not found: {data_path}")
             return [], []
         
-        # Supported file extensions
-        supported_extensions = {'.pdf', '.txt', '.md', '.docx'}
+        # Supported file extensions (Docling handles many)
+        supported_extensions = {'.pdf', '.txt', '.md', '.docx', '.pptx', '.html'}
         
         all_files = []
         for ext in supported_extensions:
@@ -99,35 +96,30 @@ class DocumentProcessor:
     
     def load_document(self, file_path: str) -> List:
         """
-        Load a document based on file extension.
+        Load a document using Docling for high-quality extraction.
         
         Args:
             file_path: Path to document
             
         Returns:
-            List of LangChain Document objects
+            List of LangChain Document objects (Markdown content)
         """
-        ext = Path(file_path).suffix.lower()
-        
+        from langchain_core.documents import Document
         try:
-            if ext == '.pdf':
-                loader = PyPDFLoader(file_path)
-            elif ext == '.txt':
-                loader = TextLoader(file_path, encoding='utf-8')
-            elif ext == '.md':
-                loader = UnstructuredMarkdownLoader(file_path)
-            elif ext == '.docx':
-                loader = Docx2txtLoader(file_path)
-            else:
-                logger.warning(f"Unsupported file type: {ext}")
-                return []
+            logger.info(f"Converting {Path(file_path).name} using Docling...")
+            result = self.converter.convert(file_path)
+            markdown_content = result.document.export_to_markdown()
             
-            documents = loader.load()
-            logger.info(f"Loaded {len(documents)} pages from {Path(file_path).name}")
-            return documents
+            # Create a single LangChain Document with the markdown content
+            doc = Document(
+                page_content=markdown_content,
+                metadata={"source": file_path, "filename": Path(file_path).name}
+            )
+            
+            return [doc]
             
         except Exception as e:
-            logger.error(f"Error loading {file_path}: {str(e)}")
+            logger.error(f"Docling error loading {file_path}: {str(e)}")
             return []
     
     def process_documents(self, file_paths: List[str], chunk_size: int = None, chunk_overlap: int = None) -> Dict:

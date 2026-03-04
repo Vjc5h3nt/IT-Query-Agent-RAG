@@ -4,56 +4,85 @@ import './IngestionModal.css';
 function IngestionModal({ isOpen, onClose, status, step, stats, onStartIngestion }) {
     if (!isOpen) return null;
 
+    const isProcessing = status === 'processing';
+
+    // Steps mapping for the pipeline UI
+    const getStepClass = (stepName) => {
+        const flow = ['idle', 'processing', 'complete'];
+        const currentIdx = flow.indexOf(status || 'idle');
+        const myIdx = flow.indexOf(stepName);
+
+        if (status === 'error') {
+            if (myIdx < 1) return 'step-completed';
+            if (myIdx === 1) return 'step-active error'; // Could add error style
+            return 'step-pending';
+        }
+
+        if (myIdx < currentIdx) return 'step-completed';
+        if (myIdx === currentIdx) return 'step-active';
+        return 'step-pending';
+    };
+
     return (
-        <div className="ingestion-modal-overlay">
-            <div className="ingestion-modal">
+        <div className="ingestion-modal-overlay" onClick={!isProcessing ? onClose : undefined}>
+            <div className="ingestion-modal" onClick={e => e.stopPropagation()}>
                 <div className="ingestion-header">
-                    <h3>Document Ingestion</h3>
-                    {!status && <button className="close-btn" onClick={onClose}>&times;</button>}
+                    <div className="ingestion-title-content">
+                        <span className="ingestion-title-icon">📚</span>
+                        <h3>Document Ingestion Pipeline</h3>
+                    </div>
+                    {!isProcessing && (
+                        <button className="close-btn" onClick={onClose}>&times;</button>
+                    )}
+                </div>
+
+                {/* STEPPER UI - Matching JIRA UX */}
+                <div className="ingestion-stepper">
+                    <div className={`ingestion-step ${getStepClass('idle')}`}>1. Prepare</div>
+                    <div className="ingestion-step-separator"></div>
+                    <div className={`ingestion-step ${getStepClass('processing')}`}>2. Extract & Index</div>
+                    <div className="ingestion-step-separator"></div>
+                    <div className={`ingestion-step ${getStepClass('complete')}`}>3. Complete</div>
                 </div>
 
                 <div className="ingestion-content">
-                    {!status ? (
+                    {/* PHASE: IDLE (SELECTION) */}
+                    {!status && (
                         <div className="selection-state">
-                            <p className="selection-info">Select an ingestion strategy for your documents:</p>
+                            <p className="selection-info">
+                                Documents in the <code>/data</code> folder will be processed using the High-Performance engine.
+                            </p>
 
-                            <div className="strategy-options">
-                                <div className="strategy-card" onClick={() => onStartIngestion('normal')}>
-                                    <div className="strategy-icon">📘</div>
-                                    <div className="strategy-title">Standard RAG</div>
-                                    <ul className="strategy-features">
-                                        <li>Chunk Size: 1000</li>
-                                        <li>Overlap: 200</li>
-                                        <li>Memory: 5 Messages</li>
-                                    </ul>
-                                    <button className="select-btn">Select Standard</button>
-                                </div>
-
-                                <div className="strategy-card premium" onClick={() => onStartIngestion('rerank')}>
-                                    <div className="strategy-icon">⚡</div>
-                                    <div className="strategy-title">Performance (Cross-Encoder)</div>
-                                    <ul className="strategy-features">
-                                        <li>Chunk Size: 400 (Denser)</li>
-                                        <li>Top-K Stage 1: 40</li>
-                                        <li>Memory: 12 Messages</li>
-                                    </ul>
-                                    <div className="premium-tag">Recommended for Accuracy</div>
-                                    <button className="select-btn">Select Performance</button>
-                                </div>
+                            <div className="strategy-card premium" onClick={() => onStartIngestion()}>
+                                <div className="strategy-title">Performance (Cross-Encoder)</div>
+                                <ul className="strategy-features">
+                                    <li>• Engine: Docling Markdown Extraction</li>
+                                    <li>• Retrieval: Two-Stage Semantic Reranking</li>
+                                    <li>• Vectors: Amazon Titan v1</li>
+                                </ul>
+                                <button className="select-btn">Start High-Performance Ingestion</button>
                             </div>
                         </div>
-                    ) : status === 'processing' ? (
+                    )}
+
+                    {/* PHASE: PROCESSING */}
+                    {status === 'processing' && (
                         <div className="processing-state">
                             <div className="spinner"></div>
-                            <p>Processing documents...</p>
-                            <div className="step-indicator">
-                                Check terminal for progress bar
+                            <div className="processing-labels">
+                                <p className="selection-info">Running Docling extraction and vector indexing...</p>
+                                <div className="step-indicator">
+                                    Check terminal for real-time progress bar
+                                </div>
                             </div>
                         </div>
-                    ) : status === 'complete' ? (
+                    )}
+
+                    {/* PHASE: COMPLETE */}
+                    {status === 'complete' && (
                         <div className="complete-state">
                             <div className="success-icon">✅</div>
-                            <h4>Ingestion Complete!</h4>
+                            <h4>Ingestion Success</h4>
 
                             <div className="stats-grid">
                                 <div className="stat-item">
@@ -75,26 +104,33 @@ function IngestionModal({ isOpen, onClose, status, step, stats, onStartIngestion
                             </div>
 
                             <div className="file-lists">
-                                {stats?.processed_files?.length > 0 && (
+                                {stats?.processed_files?.length > 0 ? (
                                     <div className="file-list">
-                                        <h5>Processed:</h5>
-                                        <ul>
-                                            {stats.processed_files.map((f, i) => <li key={i}>{f}</li>)}
+                                        <strong>Newly Indexed:</strong>
+                                        <ul style={{ listStyle: 'none', padding: 0, marginTop: '8px' }}>
+                                            {stats.processed_files.map((f, i) => (
+                                                <li key={i} style={{ marginBottom: '4px' }}>• {f}</li>
+                                            ))}
                                         </ul>
                                     </div>
+                                ) : (
+                                    <p style={{ color: 'var(--text-muted)' }}>No new files were modified or added.</p>
                                 )}
                             </div>
 
                             <button className="done-btn" onClick={onClose}>Done</button>
                         </div>
-                    ) : status === 'error' ? (
+                    )}
+
+                    {/* PHASE: ERROR */}
+                    {status === 'error' && (
                         <div className="error-state">
                             <div className="error-icon">❌</div>
-                            <h4>Ingestion Failed</h4>
-                            <p>{stats?.error || 'Unknown error occurred'}</p>
-                            <button className="done-btn" onClick={onClose}>Close</button>
+                            <h4>Ingestion Error</h4>
+                            <p>{stats?.error || 'A technical error occurred during processing.'}</p>
+                            <button className="retry-btn" onClick={onClose}>Close</button>
                         </div>
-                    ) : null}
+                    )}
                 </div>
             </div>
         </div>

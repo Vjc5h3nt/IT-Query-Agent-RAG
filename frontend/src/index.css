@@ -17,8 +17,10 @@
   --text-muted: #9ca3af;
   /* Timestamps and icons */
 
-  --bg-user-msg: #edeef0;
-  /* Subtle grey bubble */
+  /* Soft blue for user messages (ChatGPT inspired) */
+  --bg-user-msg: #e5f3ff;
+  --text-user-msg: #0c4a6e;
+  --bg-user-msg-hover: #dbeeff;
   --border-divider: #e5e7eb;
   --border-light: #e5e7eb;
   --border-medium: #d1d5db;
@@ -30,6 +32,7 @@
   --radius-md: 12px;
   --radius-lg: 16px;
   --radius-xl: 18px;
+  --formatted-text-highlight-bg: #bae6fdb3;
 }
 
 [data-theme='dark'] {
@@ -47,6 +50,8 @@
   --text-muted: #6f7685;
 
   --bg-user-msg: #1b1f26;
+  --text-user-msg: #e6eaf0;
+  --bg-user-msg-hover: #242a36;
   --border-divider: #242a36;
   --border-light: #242a36;
   --border-medium: #2d3442;
@@ -58,6 +63,7 @@
 
   --shadow-sm: 0 0 0 1px rgba(255, 255, 255, 0.02);
   --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+  --formatted-text-highlight-bg: rgba(56, 189, 248, 0.2);
 }
 
 * {

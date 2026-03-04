@@ -34,7 +34,7 @@ class RAGEngine:
             return boosted
         return base_top_k
 
-    def retrieve(self, query: str, top_k: int = None, use_reranking: bool = None) -> Tuple[str, List[str], Any]:
+    def retrieve(self, query: str, top_k: int = None, use_reranking: bool = None) -> Tuple[str, List[str], Any, List[Dict]]:
         """
         Retrieve relevant context for a query from both JIRA and PDF collections.
         
@@ -43,7 +43,7 @@ class RAGEngine:
             top_k: Number of results to retrieve per collection
             
         Returns:
-            Tuple of (formatted_context, source_list)
+            Tuple of (formatted_context, source_list, rerank_summary, citations)
         """
         if top_k is None:
             top_k = max(settings.top_k_results, 15)
@@ -70,7 +70,6 @@ class RAGEngine:
                 logger.info(f"Using HybridRetriever (BM25={bm25_store.count()} tickets) + CrossEncoder on jira_vector_store")
                 _hybrid = HybridRetriever(jira_vector_store, bm25_store)
                 retriever = CrossEncoderRetriever(jira_vector_store)
-                retriever._hybrid = _hybrid
                 fused = _hybrid.retrieve(query, top_k=top_k, filter_dict=filter_dict)
                 jira_results = retriever.retrieve(query, top_k=top_k, filter_dict=filter_dict,
                                                   precomputed_candidates=fused)
@@ -171,8 +170,8 @@ class RAGEngine:
             
             s_idx = source_ref_to_index[source_ref]
 
-            # Sequential numbering [Source S1: label] for LLM context
-            context_parts.append(f"[Source S{s_idx}: {source_label}]\n{doc}\n")
+            # Sequential numbering [[ SOURCE_S1 ]] for LLM context, with explicit ID label
+            context_parts.append(f"[[ SOURCE_S{s_idx} ]] (Data ID: {source_label})\n{doc}\n")
 
             if source_ref not in citations_map:
                 citations_map[source_ref] = {

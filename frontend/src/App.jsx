@@ -171,29 +171,19 @@ function App() {
     setIngestionStats(null);
   };
 
-  const handleIngestWithStrategy = async (strategy) => {
+  const handleIngestWithStrategy = async () => {
     setIngestionStatus('processing');
 
-    let settings = {};
-    if (strategy === 'normal') {
-      settings = {
-        chunk_size: 1000,
-        chunk_overlap: 200,
-        top_k_stage1: 5,
-        rerank_top_k: 5,
-        max_memory_messages: 5
-      };
-    } else if (strategy === 'rerank') {
-      settings = {
-        chunk_size: 512,
-        chunk_overlap: 100,
-        top_k_stage1: 50,
-        rerank_top_k: 5,
-        max_memory_messages: 5
-      };
-      // Also enable reranking in the UI automatically if they choose this
-      setUseReranking(true);
-    }
+    const settings = {
+      chunk_size: 400,
+      chunk_overlap: 100,
+      top_k_stage1: 50,
+      rerank_top_k: 8,
+      max_memory_messages: 12
+    };
+
+    // Ensure reranking is enabled in UI
+    setUseReranking(true);
 
     try {
       const result = await api.ingestDocuments(settings);

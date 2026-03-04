@@ -137,13 +137,13 @@
 }
 
 .jira-step.step-completed {
-    color: #16a34a;
-    background: rgba(22, 163, 74, 0.1);
+    color: #4f8cff;
+    background: rgba(79, 140, 255, 0.1);
 }
 
 [data-theme='dark'] .jira-step.step-completed {
-    color: #4ade80;
-    background: rgba(74, 222, 128, 0.08);
+    color: #79a6ff;
+    background: rgba(121, 166, 255, 0.08);
 }
 
 .jira-step.step-active {
@@ -217,13 +217,13 @@
 
 .jira-dropzone.file-selected {
     border-style: solid;
-    border-color: #16a34a;
-    background: rgba(22, 163, 74, 0.04);
+    border-color: #4f8cff;
+    background: rgba(79, 140, 255, 0.04);
 }
 
 [data-theme='dark'] .jira-dropzone.file-selected {
-    border-color: #4ade80;
-    background: rgba(74, 222, 128, 0.05);
+    border-color: #4f8cff;
+    background: rgba(79, 140, 255, 0.05);
 }
 
 .jira-dropzone-prompt {

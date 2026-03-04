@@ -48,7 +48,7 @@ class VectorRetriever(Retriever):
 class CrossEncoderRetriever(Retriever):
     """
     Two-stage retriever with Cross-Encoder reranking.
-    Stage 1: Retrieve large candidate set (top_k * factor or fixed large number) via vector search.
+    Stage 1: Retrieve candidate set via dense vector search (unless precomputed).
     Stage 2: Rerank candidates using a Cross-Encoder model.
     """
     
@@ -74,12 +74,7 @@ class CrossEncoderRetriever(Retriever):
         
     def retrieve(self, query: str, top_k: int, filter_dict: dict = None,
                  precomputed_candidates: dict = None) -> Dict[str, Any]:
-        """Retrieve candidates and rerank them with detailed audit logging.
-        
-        Args:
-            precomputed_candidates: If provided (from HybridRetriever), skip stage 1
-                                    vector search and rerank these candidates directly.
-        """
+        """Retrieve candidates and rerank them with detailed audit logging."""
         import time
         start_time = time.time()
         
@@ -108,7 +103,6 @@ class CrossEncoderRetriever(Retriever):
 
 
         # Stage 2: Reranking with structured input
-        # Structured format helps the cross-encoder compare query vs ticket fields explicitly.
         logger.info(f"🧠 [Rerank] Stage 2: Passing {len(docs)} candidates to Cross-Encoder ({self.model_name})")
         
         def _make_rerank_input(query: str, doc_text: str, metadata: dict) -> str:
@@ -147,7 +141,6 @@ class CrossEncoderRetriever(Retriever):
             jump = res['initial_rank'] - new_rank
             arrow = "↑" if jump > 0 else ("↓" if jump < 0 else "-")
             jump_val = abs(jump) if jump != 0 else ""
-            # Show ticket_id for JIRA results, fall back to filename for PDFs
             label = (
                 res['metadata'].get('ticket_id')
                 or res['metadata'].get('filename', 'Unknown')
@@ -183,11 +176,8 @@ class CrossEncoderRetriever(Retriever):
 
 
 def get_retriever(settings, vector_store, use_reranking: bool = None) -> Retriever:
-    """Factory function to get the appropriate retriever based on settings or override."""
-    # Use override if provided, otherwise fallback to global setting
+    """Factory function to get the appropriate retriever."""
     is_enabled = use_reranking if use_reranking is not None else settings.cross_encoder_enabled
-    
     if is_enabled:
         return CrossEncoderRetriever(vector_store)
-    else:
-        return VectorRetriever(vector_store)
+    return VectorRetriever(vector_store)

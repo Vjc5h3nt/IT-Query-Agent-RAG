@@ -82,23 +82,16 @@ function ChatInterface({ session, onSendMessage, useKnowledgeBase, onToggleKnowl
                 </div>
 
                 <div className="chat-actions">
-                    <div
-                        className={`kb-switch ${useKnowledgeBase ? 'active' : ''}`}
+                    <button
+                        className={`kb-toggle-btn ${useKnowledgeBase ? 'active' : ''}`}
                         onClick={onToggleKnowledgeBase}
-                        title={useKnowledgeBase ? "Search is grounded in Knowledge Base" : "Search is general"}
                     >
-                        <div className="kb-switch-label">
-                            <svg className="kb-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
-                                <line x1="8" y1="21" x2="16" y2="21"></line>
-                                <line x1="12" y1="17" x2="12" y2="21"></line>
-                            </svg>
-                            <span>Knowledge Base</span>
-                        </div>
-                        <div className="kb-switch-track">
-                            <div className="kb-switch-thumb"></div>
-                        </div>
-                    </div>
+                        <svg className="kb-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+                            <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+                        </svg>
+                        <span className="kb-label-text">Knowledge Base</span>
+                    </button>
                 </div>
             </div>
             <MessageList

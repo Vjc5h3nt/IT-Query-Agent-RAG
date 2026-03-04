@@ -159,15 +159,21 @@ function Sidebar({
 
                         <div className="sidebar-tools">
                             <button className="btn-sidebar-tool ingest" onClick={onIngest}>
-                                <span className="tool-icon">📚</span>
+                                <span className="tool-icon">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+                                </span>
                                 <span className="tool-text">Ingest Documents</span>
                             </button>
                             <button className="btn-sidebar-tool jira-ingest" onClick={onJiraIngest}>
-                                <span className="tool-icon">🗂️</span>
+                                <span className="tool-icon">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+                                </span>
                                 <span className="tool-text">Ingest JIRA XML</span>
                             </button>
                             <button className="btn-sidebar-tool delete-vector" onClick={onDeleteVectorStore}>
-                                <span className="tool-icon">🗑️</span>
+                                <span className="tool-icon">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                                </span>
                                 <span className="tool-text">Manage Vector Stores</span>
                             </button>
                         </div>
@@ -254,11 +260,11 @@ function Sidebar({
                                                 </tr>
                                                 <tr>
                                                     <td className="detail-category">Reranker</td>
-                                                    <td className="detail-value">ms-marco-MiniLM-L-6-v2</td>
+                                                    <td className="detail-value">ms-marco-MiniLM-L-12-v2</td>
                                                 </tr>
                                                 <tr>
                                                     <td className="detail-category">Retrieval Pipeline</td>
-                                                    <td className="detail-value">Stage 1: 50 → Stage 2: Top 5</td>
+                                                    <td className="detail-value">JIRA: Hybrid + Reranking | PDF: Docling + Reranking</td>
                                                 </tr>
                                                 <tr>
                                                     <td className="detail-category">Backend</td>

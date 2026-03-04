@@ -59,96 +59,60 @@
     color: var(--text-primary);
 }
 
-/* ── Modern KB Switch ── */
-.chat-actions {
+/* ── Modern KB Toggle ── */
+.kb-toggle-btn {
+    position: relative;
     display: flex;
     align-items: center;
-}
-
-.kb-switch {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 6px 12px;
+    justify-content: center;
+    padding: 8px;
     background: var(--bg-input);
     border: 1px solid var(--border-divider);
-    border-radius: 20px;
+    border-radius: 10px;
+    color: var(--text-muted);
     cursor: pointer;
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    user-select: none;
+    /* overflow: hidden; REMOVED to allow tooltip visibility */
+    width: 40px;
+    height: 40px;
 }
 
-[data-theme='dark'] .kb-switch {
+[data-theme='dark'] .kb-toggle-btn {
     background: rgba(255, 255, 255, 0.05);
 }
 
-.kb-switch:hover {
+.kb-toggle-btn:hover {
+    color: var(--text-primary);
     background: var(--bg-hover);
     border-color: var(--text-muted);
 }
 
-.kb-switch.active {
-    background: rgba(16, 163, 127, 0.1);
-    border-color: rgba(16, 163, 127, 0.4);
-}
-
-[data-theme='dark'] .kb-switch.active {
-    background: rgba(16, 163, 127, 0.2);
-}
-
-.kb-switch-label {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 13px;
-    font-weight: 600;
+.kb-label-text {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 11px;
+    font-weight: 500;
     color: var(--text-muted);
-    transition: color 0.2s;
+    white-space: nowrap;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    pointer-events: none;
 }
 
-.kb-switch.active .kb-switch-label {
-    color: #10a37f;
-}
-
-.kb-icon {
-    opacity: 0.7;
-}
-
-.kb-switch.active .kb-icon {
+.kb-toggle-btn:hover .kb-label-text {
     opacity: 1;
 }
 
-.kb-switch-track {
-    width: 28px;
-    height: 16px;
-    background: #d1d5db;
-    border-radius: 12px;
-    position: relative;
-    transition: background 0.3s;
+.kb-toggle-btn.active {
+    color: #4f8cff;
+    border-color: rgba(79, 140, 255, 0.5);
+    background: rgba(79, 140, 255, 0.08);
 }
 
-[data-theme='dark'] .kb-switch-track {
-    background: #374151;
-}
-
-.kb-switch.active .kb-switch-track {
-    background: #10a37f;
-}
-
-.kb-switch-thumb {
-    width: 12px;
-    height: 12px;
-    background: white;
-    border-radius: 50%;
-    position: absolute;
-    top: 2px;
-    left: 2px;
-    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-}
-
-.kb-switch.active .kb-switch-thumb {
-    transform: translateX(12px);
+.kb-toggle-btn.active .kb-label-text {
+    color: #4f8cff;
 }
 
 .input-wrapper {

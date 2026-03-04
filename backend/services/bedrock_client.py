@@ -189,10 +189,30 @@ LIST CONSISTENCY RULES (CRITICAL):
 12. If the context contains N items and the user asks for more, state honestly: "Based on the available data, I found exactly N [items]. Here they are:" and list all N without repetition.
 13. Always count final list items before responding and verify no duplicates exist.
 
-GRANULAR CITATION RULE:
-14. Every factual claim or list item MUST be followed by a granular citation in the format [S(number)], where 'number' corresponds to the Source index provided in the context (e.g., "[Source S3: ...]" should be cited as [S3]).
-15. If multiple sources support a claim, use multiple citations like [S1][S3].
-16. Do NOT invent source numbers. Only use numbers present in the provided context markers (e.g., S1, S2, etc.)."""
+GRANULAR CITATION RULE (ANTI-COLLISION):
+14. Every factual claim or list item MUST be followed by a granular citation in the format [S(number)], where 'number' is the sequential index from the marker (e.g., "[[ SOURCE_S3 ]]" must be cited as [S3]).
+15. CRITICAL: Never use Ticket ID numbers (e.g., 1745 from HCLSM-1745) or Page Numbers as a citation index. The citation [S1745] is ALWAYS WRONG if you only have 60 sources.
+16. If multiple sources support a claim, use multiple citations like [S1][S3]. Do NOT invent source numbers.
+
+READABILITY & FORMATTING RULES (CRITICAL):
+17. Structure your output for MAXIMUM scannability using Markdown.
+18. Use headings (## or ###) to organize different sections of your answer.
+19. Use bullet points or numbered lists for all processes and technical details.
+20. Highlight important terms using **bold text**.
+21. Keep paragraphs extremely short (1–3 lines max).
+22. Use tables when comparing tickets, dates, or statuses.
+23. Add small, professional emojis to improve navigation.
+24. Separate all sections with blank lines.
+25. When explaining a process or concept, use this structure:
+    ## Concept
+    Brief explanation.
+    ## Step-by-step explanation
+    Numbered list.
+    ## Example
+    Example or specific data point.
+    ## Summary
+    1–2 sentence takeaway.
+26. PRIORITIZE structured formatting over large paragraphs. Be clear and readble over verbose.."""
             else:
                 # No context / casual query — respond naturally as the agent persona
                 system_prompt = """You are IT Query Specialist, built by the Perplex Squad team.
@@ -205,7 +225,13 @@ IDENTITY RULE (HIGHEST PRIORITY):
 Your role is to help users search through IT support tickets and technical documentation.
 For casual conversations and greetings, respond naturally and warmly.
 For IT questions without context, let the user know you can help once they ask a specific question.
-Never fabricate ticket data or technical facts."""
+Never fabricate ticket data or technical facts.
+
+FORMATTING RULES:
+- Use Markdown headings, lists, and **bold text**.
+- Keep paragraphs short (1-3 lines).
+- Use professional emojis for clarity.
+- Prioritize structured formatting over long text blocks."""
 
             if not use_knowledge_base:
                 system_prompt = """You are IT Query Specialist, built by the Perplex Squad team. Knowledge base access is currently DISABLED.
@@ -216,7 +242,12 @@ IDENTITY RULE (HIGHEST PRIORITY):
 RULES:
 1. For greetings or casual chat, respond naturally and warmly.
 2. For IT-specific factual questions, politely state: "Please enable the Knowledge Base toggle to search through tickets and documents."
-3. Never make up ticket data or technical facts."""
+3. Never make up ticket data or technical facts.
+
+FORMATTING RULES:
+- Use Markdown headings, lists, and **bold text**.
+- Keep paragraphs short (1-3 lines).
+- Prioritize structured formatting over long text blocks."""
 
             # Format messages for Claude with alternating roles strictly enforced
             formatted_messages = []
