@@ -1,6 +1,82 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
+import {
+    Plus,
+    Search,
+    MessageSquare,
+    BookOpen,
+    Folder,
+    Trash2,
+    Moon,
+    Sun,
+    ChevronLeft,
+    ChevronRight,
+    Pencil,
+    Info,
+    X,
+    MoreHorizontal,
+    PanelLeftOpen,
+} from 'lucide-react';
+import catLogo from '../assets/cat.png';
+import catLogoWhite from '../assets/cat-white.png';
 import './Sidebar.css';
 
+/* ── Tooltip (collapsed rail labels) ── */
+function Tooltip({ label, children }) {
+    return (
+        <div className="tooltip-wrapper">
+            {children}
+            <span className="tooltip-label">{label}</span>
+        </div>
+    );
+}
+
+/* ── Portal dropdown (escapes overflow:hidden) ── */
+function SessionDropdown({ anchorRect, onRename, onDelete, onClose }) {
+    const ref = useRef(null);
+
+    useEffect(() => {
+        const handle = (e) => {
+            if (ref.current && !ref.current.contains(e.target)) onClose();
+        };
+        document.addEventListener('mousedown', handle);
+        return () => document.removeEventListener('mousedown', handle);
+    }, [onClose]);
+
+    if (!anchorRect) return null;
+
+    const MENU_WIDTH = 160;
+    const MENU_HEIGHT = 88;
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+
+    let top = anchorRect.bottom + 4;
+    let left = anchorRect.right - MENU_WIDTH;
+    if (top + MENU_HEIGHT > vh) top = anchorRect.top - MENU_HEIGHT - 4;
+    if (left < 8) left = 8;
+    if (left + MENU_WIDTH > vw - 8) left = vw - MENU_WIDTH - 8;
+
+    return createPortal(
+        <div
+            ref={ref}
+            className="session-dropdown"
+            style={{ position: 'fixed', top, left, width: MENU_WIDTH, zIndex: 9999 }}
+            onMouseDown={(e) => e.stopPropagation()}
+        >
+            <button className="session-dropdown-item" onClick={onRename}>
+                <Pencil size={14} strokeWidth={2} />
+                Rename
+            </button>
+            <button className="session-dropdown-item danger" onClick={onDelete}>
+                <Trash2 size={14} strokeWidth={2} />
+                Delete
+            </button>
+        </div>,
+        document.body
+    );
+}
+
+/* ── Main component ── */
 function Sidebar({
     sessions,
     currentSession,
@@ -19,113 +95,163 @@ function Sidebar({
     onToggleTheme,
     userName,
     onUpdateUserName,
-    onRenameSession
+    onRenameSession,
 }) {
-    const [isSearchVisible, setIsSearchVisible] = useState(false);
-    const [isEditingName, setIsEditingName] = useState(false);
-    const [tempName, setTempName] = useState(userName);
+    const [isEditingName, setIsEditingName]     = useState(false);
+    const [tempName, setTempName]               = useState(userName);
+    const [editingSessionId, setEditingSessionId]       = useState(null);
+    const [editingSessionValue, setEditingSessionValue] = useState('');
+    const [showSystemDetails, setShowSystemDetails]     = useState(false);
+    const [menuAnchor, setMenuAnchor] = useState(null); // { id, rect }
 
-    // Session renaming state
-    const [editingSessionId, setEditingSessionId] = useState(null);
-    const [editingSessionValue, setEditingSessionValue] = useState("");
-
-    // System details modal
-    const [showSystemDetails, setShowSystemDetails] = useState(false);
-
-    const handleStartEdit = () => {
-        setTempName(userName);
-        setIsEditingName(true);
+    /* ── helpers ── */
+    const getInitials = (name = '') => {
+        const words = name.trim().split(/\s+/).filter(Boolean);
+        if (!words.length) return '?';
+        if (words.length === 1) return words[0][0].toUpperCase();
+        return (words[0][0] + words[words.length - 1][0]).toUpperCase();
     };
 
-    const handleSaveName = () => {
-        if (tempName.trim()) {
-            onUpdateUserName(tempName.trim());
-        }
-        setIsEditingName(false);
+    const PALETTE = [
+        '#E05A5A','#E07A2F','#C4882D','#3AAD77',
+        '#4A90D9','#7C6ED4','#D4609A','#2BB8A8',
+        '#5B7FA6','#8E6B3E',
+    ];
+    const getAvatarColor = (name = '') => {
+        let h = 0;
+        for (let i = 0; i < name.length; i++) h = name.charCodeAt(i) + ((h << 5) - h);
+        return PALETTE[Math.abs(h) % PALETTE.length];
     };
 
-    const handleKeyDown = (e) => {
-        if (e.key === 'Enter') handleSaveName();
-        if (e.key === 'Escape') setIsEditingName(false);
-    };
+    const handleStartEdit   = () => { setTempName(userName); setIsEditingName(true); };
+    const handleSaveName    = () => { if (tempName.trim()) onUpdateUserName(tempName.trim()); setIsEditingName(false); };
+    const handleNameKeyDown = (e) => { if (e.key === 'Enter') handleSaveName(); if (e.key === 'Escape') setIsEditingName(false); };
 
-    const startEditingSession = (e, session) => {
-        e.stopPropagation();
-        setEditingSessionId(session.id);
-        setEditingSessionValue(session.name);
+    const startEditingSession = (sessionId, name) => {
+        setEditingSessionId(sessionId);
+        setEditingSessionValue(name);
     };
-
     const saveSessionName = (sessionId) => {
-        if (editingSessionValue.trim() && editingSessionValue !== sessions.find(s => s.id === sessionId)?.name) {
+        const original = sessions.find(s => s.id === sessionId)?.name;
+        if (editingSessionValue.trim() && editingSessionValue !== original)
             onRenameSession(sessionId, editingSessionValue.trim());
-        }
         setEditingSessionId(null);
     };
 
+    const openMenu = useCallback((e, session) => {
+        e.stopPropagation();
+        const rect = e.currentTarget.getBoundingClientRect();
+        setMenuAnchor(prev => prev?.id === session.id ? null : { id: session.id, rect, session });
+    }, []);
+
+    const closeMenu = useCallback(() => setMenuAnchor(null), []);
+
+    /* ── Tool button (expanded + collapsed) ── */
+    const ToolBtn = ({ icon, label, onClick, className = '' }) =>
+        isCollapsed ? (
+            <Tooltip label={label}>
+                <button className={`btn-tool ${className}`} onClick={onClick}>{icon}</button>
+            </Tooltip>
+        ) : (
+            <button className={`btn-tool ${className}`} onClick={onClick}>
+                {icon}
+                <span className="btn-tool-label">{label}</span>
+            </button>
+        );
+
     return (
         <div className={`sidebar-container ${isCollapsed ? 'collapsed' : ''}`}>
-            <button className="btn-toggle-sidebar" onClick={onToggleCollapse} title={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}>
-                {isCollapsed ? '→' : '←'}
-            </button>
             <div className="sidebar">
-                <div className="sidebar-header">
-                    <div className="brand">
-                        <div className="brand-content">
-                            <span className="brand-text">IT Query Agent</span>
-                            <span className="brand-credit">Developed by Perplex Squad</span>
-                        </div>
-                    </div>
-                    {!isCollapsed && (
-                        <div className="header-actions">
-                            <button
-                                className={`btn-new-session ${isSearchVisible ? 'minimized' : ''}`}
-                                onClick={() => {
-                                    if (isSearchVisible) {
-                                        setIsSearchVisible(false);
-                                    }
-                                    onNewSession();
-                                }}
-                            >
-                                <span className="plus-icon">+</span>
-                                {!isSearchVisible && <span className="btn-text">New chat</span>}
-                            </button>
 
-                            <div className={`search-wrapper ${isSearchVisible ? 'expanded' : ''}`}>
-                                <button className="btn-search" onClick={() => setIsSearchVisible(!isSearchVisible)}>
-                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                                </button>
-                                {isSearchVisible && (
-                                    <input
-                                        type="text"
-                                        placeholder="Search sessions..."
-                                        value={searchQuery}
-                                        onChange={(e) => onSearchChange(e.target.value)}
-                                        autoFocus
-                                    />
-                                )}
+                {/* ── Brand / Logo ── */}
+                {isCollapsed ? (
+                    /* Collapsed: cat logo fades to expand icon on hover — single button, no overlap */
+                    <div className="sidebar-brand collapsed">
+                        <button
+                            className="brand-collapse-btn"
+                            onClick={onToggleCollapse}
+                            title="Expand sidebar"
+                            aria-label="Expand sidebar"
+                        >
+                            <img src={theme === 'light' ? catLogoWhite : catLogo} alt="logo" className="brand-cat-img" />
+                            <PanelLeftOpen size={20} strokeWidth={2} className="brand-expand-icon" />
+                        </button>
+                    </div>
+                ) : (
+                    /* Expanded: logo + dim name + collapse button */
+                    <div className="sidebar-brand">
+                        <div className="brand-logo-wrap">
+                            <div className="brand-logo">
+                                <img src={theme === 'light' ? catLogoWhite : catLogo} alt="logo" className="brand-cat-img" />
                             </div>
+                            <span className="brand-name-dim">IT Query Agent</span>
+                        </div>
+                        <button
+                            className="btn-collapse"
+                            onClick={onToggleCollapse}
+                            title="Collapse sidebar"
+                        >
+                            <ChevronLeft size={18} strokeWidth={2} />
+                        </button>
+                    </div>
+                )}
+
+                {/* ── Header actions ── */}
+                <div className="sidebar-header">
+                    {isCollapsed ? (
+                        <Tooltip label="New Chat">
+                            <button className="btn-new-chat icon-only" onClick={onNewSession}>
+                                <Plus size={18} strokeWidth={2} />
+                            </button>
+                        </Tooltip>
+                    ) : (
+                        <button className="btn-new-chat" onClick={onNewSession}>
+                            <Plus size={18} strokeWidth={2} />
+                            <span>New Chat</span>
+                        </button>
+                    )}
+
+                    {isCollapsed ? (
+                        <Tooltip label="Search">
+                            <button className="btn-icon-only" onClick={() => {}}>
+                                <Search size={18} strokeWidth={2} />
+                            </button>
+                        </Tooltip>
+                    ) : (
+                        <div className="search-bar">
+                            <Search size={18} color="#6B7280" strokeWidth={2} />
+                            <input
+                                type="text"
+                                placeholder="Search conversations..."
+                                value={searchQuery}
+                                onChange={(e) => onSearchChange(e.target.value)}
+                            />
                         </div>
                     )}
                 </div>
 
+                {/* ── Conversations ── */}
                 {!isCollapsed && (
-                    <>
-                        <div className="sidebar-conversations">
-                            <div className="section-header">
-                                <span>Your conversations</span>
-                            </div>
-                            <div className="sessions-list">
-                                {sessions.length === 0 ? (
-                                    <div className="no-sessions">No conversations found</div>
-                                ) : (
-                                    sessions.map((session) => (
+                    <div className="sidebar-conversations">
+                        <p className="section-label">Conversations</p>
+                        <div className="sessions-list">
+                            {sessions.length === 0 ? (
+                                <div className="no-sessions">No conversations yet</div>
+                            ) : (
+                                sessions.map((session) => {
+                                    const isActive  = currentSession?.id === session.id;
+                                    const isEditing = editingSessionId === session.id;
+                                    const menuOpen  = menuAnchor?.id === session.id;
+
+                                    return (
                                         <div
                                             key={session.id}
-                                            className={`session-item ${currentSession?.id === session.id ? 'active' : ''}`}
+                                            className={`session-item ${isActive ? 'active' : ''} ${menuOpen ? 'menu-open' : ''}`}
                                             onClick={() => onSelectSession(session.id)}
-                                            title={`Standard Name: Chat Session ${new Date(session.created_at).toLocaleString()}`}
                                         >
-                                            {editingSessionId === session.id ? (
+                                            <MessageSquare size={18} strokeWidth={2} className="session-icon-svg" />
+
+                                            {isEditing ? (
                                                 <input
                                                     autoFocus
                                                     className="session-name-edit"
@@ -133,164 +259,149 @@ function Sidebar({
                                                     onChange={(e) => setEditingSessionValue(e.target.value)}
                                                     onBlur={() => saveSessionName(session.id)}
                                                     onKeyDown={(e) => {
-                                                        if (e.key === 'Enter') saveSessionName(session.id);
+                                                        if (e.key === 'Enter')  saveSessionName(session.id);
                                                         if (e.key === 'Escape') setEditingSessionId(null);
                                                     }}
                                                     onClick={(e) => e.stopPropagation()}
                                                 />
                                             ) : (
                                                 <>
-                                                    <div className="session-name">{session.name}</div>
-                                                    <div className="session-actions">
-                                                        <button className="action-btn edit" onClick={(e) => startEditingSession(e, session)} title="Rename session">
-                                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
-                                                        </button>
-                                                        <button className="action-btn delete" onClick={(e) => { e.stopPropagation(); onDeleteSession(session.id); }} title="Delete session">
-                                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                                                        </button>
-                                                    </div>
+                                                    <span className="session-name">{session.name}</span>
+                                                    <button
+                                                        className="session-more-btn"
+                                                        onClick={(e) => openMenu(e, session)}
+                                                        title="More options"
+                                                    >
+                                                        <MoreHorizontal size={16} strokeWidth={2} />
+                                                    </button>
                                                 </>
                                             )}
                                         </div>
-                                    ))
+                                    );
+                                })
+                            )}
+                        </div>
+                    </div>
+                )}
+
+                {/* ── Tools ── */}
+                <div className="sidebar-tools">
+                    {!isCollapsed && <p className="section-label">Tools</p>}
+                    <ToolBtn icon={<BookOpen size={18} strokeWidth={2} />} label="Ingest Documents"    onClick={onIngest} />
+                    <ToolBtn icon={<Folder   size={18} strokeWidth={2} />} label="Ingest JIRA XML"     onClick={onJiraIngest} />
+                    <ToolBtn icon={<Trash2   size={18} strokeWidth={2} />} label="Manage Vector Stores" onClick={onDeleteVectorStore} className="danger-hover" />
+                </div>
+
+                {/* ── Footer ── */}
+                <div className="sidebar-footer">
+                    {isCollapsed ? (
+                        <Tooltip label={userName}>
+                            <div className="user-profile icon-only">
+                                <div className="avatar avatar-initials" style={{ background: getAvatarColor(userName) }}>
+                                    <span>{getInitials(userName)}</span>
+                                </div>
+                            </div>
+                        </Tooltip>
+                    ) : (
+                        <div className="user-profile">
+                            <div className="avatar avatar-initials" style={{ background: getAvatarColor(userName) }}>
+                                <span>{getInitials(userName)}</span>
+                            </div>
+                            <div className="user-info">
+                                {isEditingName ? (
+                                    <input
+                                        autoFocus
+                                        className="name-edit-input"
+                                        value={tempName}
+                                        onChange={(e) => setTempName(e.target.value)}
+                                        onBlur={handleSaveName}
+                                        onKeyDown={handleNameKeyDown}
+                                    />
+                                ) : (
+                                    <span className="user-name" onClick={handleStartEdit} title="Click to rename">
+                                        {userName}
+                                    </span>
                                 )}
                             </div>
-                        </div>
-
-                        <div className="sidebar-tools">
-                            <button className="btn-sidebar-tool ingest" onClick={onIngest}>
-                                <span className="tool-icon">
-                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
-                                </span>
-                                <span className="tool-text">Ingest Documents</span>
-                            </button>
-                            <button className="btn-sidebar-tool jira-ingest" onClick={onJiraIngest}>
-                                <span className="tool-icon">
-                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
-                                </span>
-                                <span className="tool-text">Ingest JIRA XML</span>
-                            </button>
-                            <button className="btn-sidebar-tool delete-vector" onClick={onDeleteVectorStore}>
-                                <span className="tool-icon">
-                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
-                                </span>
-                                <span className="tool-text">Manage Vector Stores</span>
+                            <button className="action-icon info-btn" onClick={() => setShowSystemDetails(true)} title="System Details">
+                                <Info size={16} strokeWidth={2} />
                             </button>
                         </div>
+                    )}
 
-                        <div className="sidebar-footer">
-                            <div className="user-profile">
-                                <div className="avatar">
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-                                </div>
-                                <div className="user-info">
-                                    {isEditingName ? (
-                                        <input
-                                            autoFocus
-                                            className="name-edit-input"
-                                            value={tempName}
-                                            onChange={(e) => setTempName(e.target.value)}
-                                            onBlur={handleSaveName}
-                                            onKeyDown={handleKeyDown}
-                                        />
-                                    ) : (
-                                        <div className="user-name-wrapper" onClick={handleStartEdit}>
-                                            <div className="user-name">{userName}</div>
-                                            <button className="action-btn edit-name" title="Edit name">
-                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
-                                            </button>
-                                        </div>
-                                    )}
-                                </div>
-                                <button
-                                    className="action-btn system-info"
-                                    onClick={() => setShowSystemDetails(true)}
-                                    title="System Details"
-                                >
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                        <circle cx="12" cy="12" r="10"></circle>
-                                        <line x1="12" y1="16" x2="12" y2="12"></line>
-                                        <line x1="12" y1="8" x2="12.01" y2="8"></line>
-                                    </svg>
-                                </button>
-                            </div>
-                            <button className="btn-toggle-theme" onClick={onToggleTheme} title={theme === 'light' ? 'Switch to Dark Mode' : 'Switch to Light Mode'}>
-                                <span className="theme-toggle-label">
-                                    {theme === 'light' ? (
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
-                                    ) : (
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
-                                    )}
-                                    {theme === 'light' ? 'Dark mode' : 'Light mode'}
-                                </span>
-                                <span className="theme-pill"></span>
+                    {isCollapsed ? (
+                        <Tooltip label={theme === 'light' ? 'Dark Mode' : 'Light Mode'}>
+                            <button className="btn-theme icon-only" onClick={onToggleTheme}>
+                                {theme === 'light' ? <Moon size={18} strokeWidth={2} /> : <Sun size={18} strokeWidth={2} />}
                             </button>
-                        </div>
-
-                        {/* System Details Modal */}
-                        {showSystemDetails && (
-                            <div className="modal-overlay" onClick={() => setShowSystemDetails(false)}>
-                                <div className="modal-content system-details-modal" onClick={(e) => e.stopPropagation()}>
-                                    <div className="modal-header">
-                                        <h3>System Details</h3>
-                                        <button className="modal-close" onClick={() => setShowSystemDetails(false)}>×</button>
-                                    </div>
-                                    <div className="modal-body">
-                                        <table className="system-details-table">
-                                            <tbody>
-                                                <tr>
-                                                    <td className="detail-category">Language Model</td>
-                                                    <td className="detail-value">Claude 3 Haiku (AWS Bedrock)</td>
-                                                </tr>
-                                                <tr>
-                                                    <td className="detail-category">Temperature</td>
-                                                    <td className="detail-value">0.1 (High Precision)</td>
-                                                </tr>
-                                                <tr>
-                                                    <td className="detail-category">Embeddings</td>
-                                                    <td className="detail-value">Amazon Titan Text v1 (1536D)</td>
-                                                </tr>
-                                                <tr>
-                                                    <td className="detail-category">Vector Store</td>
-                                                    <td className="detail-value">ChromaDB (L2 Distance)</td>
-                                                </tr>
-                                                <tr>
-                                                    <td className="detail-category">Similarity Threshold</td>
-                                                    <td className="detail-value">0.7</td>
-                                                </tr>
-                                                <tr>
-                                                    <td className="detail-category">Reranker</td>
-                                                    <td className="detail-value">ms-marco-MiniLM-L-12-v2</td>
-                                                </tr>
-                                                <tr>
-                                                    <td className="detail-category">Retrieval Pipeline</td>
-                                                    <td className="detail-value">JIRA: Hybrid + Reranking | PDF: Docling + Reranking</td>
-                                                </tr>
-                                                <tr>
-                                                    <td className="detail-category">Backend</td>
-                                                    <td className="detail-value">FastAPI (Python 3.11+)</td>
-                                                </tr>
-                                                <tr>
-                                                    <td className="detail-category">Session Storage</td>
-                                                    <td className="detail-value">SQLite</td>
-                                                </tr>
-                                                <tr>
-                                                    <td className="detail-category">Memory Window</td>
-                                                    <td className="detail-value">5 messages</td>
-                                                </tr>
-                                                <tr>
-                                                    <td className="detail-category">Frontend</td>
-                                                    <td className="detail-value">React 18 + Vite</td>
-                                                </tr>
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-                    </>
-                )}
+                        </Tooltip>
+                    ) : (
+                        <button className="btn-theme" onClick={onToggleTheme}>
+                            <span className="theme-label">
+                                {theme === 'light' ? <Moon size={18} strokeWidth={2} /> : <Sun size={18} strokeWidth={2} />}
+                                {theme === 'light' ? 'Dark Mode' : 'Light Mode'}
+                            </span>
+                            <span className={`theme-switch ${theme === 'dark' ? 'on' : ''}`}>
+                                <span className="theme-thumb" />
+                            </span>
+                        </button>
+                    )}
+                </div>
             </div>
+
+            {/* ── Portal dropdown (outside overflow:hidden) ── */}
+            {menuAnchor && (
+                <SessionDropdown
+                    anchorRect={menuAnchor.rect}
+                    onClose={closeMenu}
+                    onRename={() => {
+                        startEditingSession(menuAnchor.id, menuAnchor.session.name);
+                        closeMenu();
+                    }}
+                    onDelete={() => {
+                        onDeleteSession(menuAnchor.id);
+                        closeMenu();
+                    }}
+                />
+            )}
+
+            {/* ── System Details Modal ── */}
+            {showSystemDetails && (
+                <div className="modal-overlay" onClick={() => setShowSystemDetails(false)}>
+                    <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <h3>System Details</h3>
+                            <button className="modal-close" onClick={() => setShowSystemDetails(false)}>
+                                <X size={18} strokeWidth={2} />
+                            </button>
+                        </div>
+                        <div className="modal-body">
+                            <table className="system-details-table">
+                                <tbody>
+                                    {[
+                                        ['Language Model',      'Claude 3 Haiku (AWS Bedrock)'],
+                                        ['Temperature',         '0.1 (High Precision)'],
+                                        ['Embeddings',          'Amazon Titan Text v1 (1536D)'],
+                                        ['Vector Store',        'ChromaDB (L2 Distance)'],
+                                        ['Similarity Threshold','0.7'],
+                                        ['Reranker',            'ms-marco-MiniLM-L-12-v2'],
+                                        ['Retrieval Pipeline',  'JIRA: Hybrid + Reranking | PDF: Docling + Reranking'],
+                                        ['Backend',             'FastAPI (Python 3.11+)'],
+                                        ['Session Storage',     'SQLite'],
+                                        ['Memory Window',       '5 messages'],
+                                        ['Frontend',            'React 18 + Vite'],
+                                    ].map(([k, v]) => (
+                                        <tr key={k}>
+                                            <td className="detail-category">{k}</td>
+                                            <td className="detail-value">{v}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

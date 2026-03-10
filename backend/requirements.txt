@@ -5,6 +5,8 @@ chromadb
 langchain
 langchain-community
 langchain-aws
+langchain-text-splitters
+langgraph
 sqlalchemy
 python-dotenv
 pydantic
@@ -16,3 +18,5 @@ numpy
 lxml
 beautifulsoup4
 opensearch-py>=2.3.0
+tqdm
+docling

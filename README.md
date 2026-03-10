@@ -35,7 +35,8 @@ A high-performance RAG (Retrieval Augmented Generation) system designed for deep
 - **Search**: BM25 (Rank-BM25) for lexical matching
 - **Reranking**: Sentence-Transformers (Cross-Encoder)
 - **Database**: SQLAlchemy + SQLite for session persistence
-- **Framework**: LangChain for advanced RAG piping
+- **Frameworks**: LangChain & LangGraph for advanced RAG piping and memory
+- **Document Parsing**: Docling for high-quality multi-format extraction
 
 ### Frontend (**React + Vite**)
 - **Framework**: React 18+
