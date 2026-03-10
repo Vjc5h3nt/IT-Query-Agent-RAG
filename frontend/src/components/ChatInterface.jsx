@@ -99,6 +99,7 @@ function ChatInterface({ session, onSendMessage, useKnowledgeBase, onToggleKnowl
                 onRegenerate={handleRegenerate}
                 loading={loading}
                 userName={userName}
+                sessionId={session?.id}
             />
             <div className="input-wrapper">
                 <ChatInput onSend={handleSendMessage} disabled={loading} />

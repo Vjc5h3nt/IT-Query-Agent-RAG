@@ -67,13 +67,24 @@ function App() {
   };
 
   const handleNewSession = async () => {
+    // If a tracked empty session still exists in the list, navigate to it
+    if (emptySessionId && sessions.some((s) => s.id === emptySessionId)) {
+      await handleSelectSession(emptySessionId);
+      return;
+    }
+
+    // If the current session is already empty, stay on it
+    if (currentSession && (currentSession.messages?.length ?? 0) === 0) {
+      return;
+    }
+
     try {
       const newSession = await api.createSession();
       setSessions((prev) => [newSession, ...prev]);
 
-      // Load full session details
       const sessionDetail = await api.getSession(newSession.id);
       setCurrentSession(sessionDetail);
+      setEmptySessionId(newSession.id);
     } catch (error) {
       console.error('Error creating session:', error);
       alert('Failed to create session');
@@ -97,6 +108,9 @@ function App() {
 
       if (currentSession?.id === sessionId) {
         setCurrentSession(null);
+      }
+      if (emptySessionId === sessionId) {
+        setEmptySessionId(null);
       }
     } catch (error) {
       console.error('Error deleting session:', error);
@@ -124,9 +138,15 @@ function App() {
   const [useReranking, setUseReranking] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [emptySessionId, setEmptySessionId] = useState(null);
 
   const handleSendMessage = async (message) => {
     if (!currentSession) return;
+
+    // Session now has a message — it's no longer empty
+    if (currentSession.id === emptySessionId) {
+      setEmptySessionId(null);
+    }
 
     const response = await api.sendMessage(currentSession.id, message, useKnowledgeBase, useReranking);
 

@@ -1,10 +1,51 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useMemo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import './MessageList.css';
 
-function MessageList({ messages, onRegenerate, loading, userName }) {
+const WELCOME_PROMPTS = [
+    {
+        heading: "What's on your mind?",
+        sub: "Ask me anything about your documents, data, or knowledge base.",
+    },
+    {
+        heading: "Ready when you are.",
+        sub: "Bring your toughest questions — I'll dig through your knowledge base to find answers.",
+    },
+    {
+        heading: "Let's get to work.",
+        sub: "Ask about your documents, tickets, policies, or anything in the knowledge base.",
+    },
+    {
+        heading: "How can I assist you today?",
+        sub: "I can search your documents, summarise content, or answer technical questions.",
+    },
+    {
+        heading: "Your knowledge base is ready.",
+        sub: "What would you like to explore, clarify, or investigate?",
+    },
+    {
+        heading: "Ask me anything.",
+        sub: "From technical queries to document search — I'm here to help you find answers fast.",
+    },
+    {
+        heading: "Good to see you.",
+        sub: "What problem can I help you solve today?",
+    },
+    {
+        heading: "Intelligence at your fingertips.",
+        sub: "Start with a question and I'll surface the most relevant information for you.",
+    },
+];
+
+function MessageList({ messages, onRegenerate, loading, userName, sessionId }) {
     const messagesEndRef = useRef(null);
     const [copiedIndex, setCopiedIndex] = useState(null);
+
+    const welcomePrompt = useMemo(
+        () => WELCOME_PROMPTS[Math.floor(Math.random() * WELCOME_PROMPTS.length)],
+        // Re-pick whenever the session changes
+        [sessionId]
+    );
     const [showAuditIndex, setShowAuditIndex] = useState(null);
     const [showMetricsIndex, setShowMetricsIndex] = useState(null);
     const [expandedSources, setExpandedSources] = useState({});
@@ -38,8 +79,8 @@ function MessageList({ messages, onRegenerate, loading, userName }) {
         <div className="message-list">
             {messages.length === 0 && !loading ? (
                 <div className="empty-state">
-                    <h3>How can I help you today?</h3>
-                    <p>Start chatting about your documents.</p>
+                    <h3>{welcomePrompt.heading}</h3>
+                    <p>{welcomePrompt.sub}</p>
                 </div>
             ) : (
                 <div className="messages-container">

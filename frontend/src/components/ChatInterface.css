@@ -4,81 +4,80 @@
     flex-direction: column;
     height: 100vh;
     background: var(--bg-app);
-    /* #F7F7F8 */
     position: relative;
     max-width: 100%;
+    overflow: hidden;
 }
 
+/* ── Header ──────────────────────────────────────────────── */
 .chat-header {
-    height: 64px;
-    padding: 0 32px;
+    height: 56px;
+    padding: 0 24px;
     display: flex;
     align-items: center;
     justify-content: space-between;
     position: sticky;
     top: 0;
     z-index: 100;
-    background: rgba(var(--bg-app-rgb, 255, 255, 255), 0.85);
-    backdrop-filter: blur(20px) saturate(180%);
-    -webkit-backdrop-filter: blur(20px) saturate(180%);
-    border-bottom: 1px solid var(--border-divider);
-    transition: background 0.3s ease;
+    background: var(--bg-app);
+    border-bottom: 1px solid var(--border-subtle);
+    transition: background 0.2s ease;
+    flex-shrink: 0;
 }
 
 [data-theme='dark'] .chat-header {
-    background: rgba(20, 23, 28, 0.8);
-    border-bottom-color: rgba(255, 255, 255, 0.1);
+    border-bottom-color: #242424;
 }
 
 .header-left {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
 }
 
 .header-indicator {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 32px;
-    height: 32px;
+    width: 30px;
+    height: 30px;
     border-radius: 8px;
-    background: var(--bg-input);
     color: var(--text-muted);
-}
-
-[data-theme='dark'] .header-indicator {
-    background: rgba(255, 255, 255, 0.05);
+    flex-shrink: 0;
 }
 
 .session-title {
     margin: 0;
-    font-size: 0.95rem;
+    font-size: 14px;
     font-weight: 600;
-    letter-spacing: -0.01em;
     color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 400px;
 }
 
-/* ── Modern KB Toggle ── */
+/* ── KB Toggle ───────────────────────────────────────────── */
+.chat-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
 .kb-toggle-btn {
     position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 8px;
-    background: var(--bg-input);
-    border: 1px solid var(--border-divider);
-    border-radius: 10px;
+    padding: 0;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 8px;
     color: var(--text-muted);
     cursor: pointer;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    /* overflow: hidden; REMOVED to allow tooltip visibility */
-    width: 40px;
-    height: 40px;
-}
-
-[data-theme='dark'] .kb-toggle-btn {
-    background: rgba(255, 255, 255, 0.05);
+    transition: all 0.15s ease;
+    width: 36px;
+    height: 36px;
 }
 
 .kb-toggle-btn:hover {
@@ -94,35 +93,48 @@
     transform: translateX(-50%);
     font-size: 11px;
     font-weight: 500;
-    color: var(--text-muted);
+    background: #111827;
+    color: #fff;
+    padding: 4px 8px;
+    border-radius: 6px;
     white-space: nowrap;
     opacity: 0;
-    transition: opacity 0.2s ease;
+    transition: opacity 0.15s ease;
     pointer-events: none;
+    z-index: 10;
 }
 
-.kb-toggle-btn:hover .kb-label-text {
-    opacity: 1;
-}
+[data-theme='dark'] .kb-label-text { background: #e5e5e5; color: #111827; }
+
+.kb-toggle-btn:hover .kb-label-text { opacity: 1; }
 
 .kb-toggle-btn.active {
-    color: #4f8cff;
-    border-color: rgba(79, 140, 255, 0.5);
-    background: rgba(79, 140, 255, 0.08);
+    color: #10a37f;
+    border-color: rgba(16,163,127,0.4);
+    background: rgba(16,163,127,0.08);
 }
 
-.kb-toggle-btn.active .kb-label-text {
-    color: #4f8cff;
+[data-theme='dark'] .kb-toggle-btn {
+    border-color: #2a2a2a;
 }
 
+[data-theme='dark'] .kb-toggle-btn:hover {
+    background: #1f1f1f;
+    border-color: #3a3a3a;
+}
+
+[data-theme='dark'] .kb-toggle-btn.active {
+    color: #10a37f;
+    border-color: rgba(16,163,127,0.4);
+    background: rgba(16,163,127,0.1);
+}
+
+/* ── Input wrapper ───────────────────────────────────────── */
 .input-wrapper {
     background: var(--bg-app);
-    padding: 0 32px 32px;
-    max-width: 900px;
+    padding: 12px 24px 16px;
+    max-width: 828px;
     margin: 0 auto;
     width: 100%;
-}
-
-[data-theme='dark'] .input-wrapper {
-    background: var(--bg-app);
+    flex-shrink: 0;
 }

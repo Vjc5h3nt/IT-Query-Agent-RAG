@@ -1,111 +1,155 @@
-.chat-input-container {
-  padding: 20px 40px 40px 40px;
-  background: var(--bg-app);
-  width: 100%;
-  display: flex;
-  justify-content: center;
-  position: relative;
+/* ── Prompt bar wrapper ───────────────────────────────────── */
+.chat-input-form {
+    width: 100%;
+    display: flex;
+    justify-content: center;
 }
 
-.input-pill {
-  width: 100%;
-  max-width: 800px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 8px 12px 8px 16px;
-  background: var(--bg-input);
-  border: 1px solid var(--border-medium);
-  border-radius: 16px;
-  box-shadow: var(--shadow-sm);
-  transition: border-color 0.2s, box-shadow 0.2s;
+/* ── Floating prompt bar ─────────────────────────────────── */
+.prompt-bar {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    background: #1e1e1e;
+    border: 1px solid #2a2a2a;
+    border-radius: 14px;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
-[data-theme='light'] .input-pill {
-  background: #ffffff;
-  border: 1px solid var(--border-divider);
-  border-radius: var(--radius-xl);
-  box-shadow: 0 0 15px rgba(0, 0, 0, 0.03), 0 2px 5px rgba(0, 0, 0, 0.05);
+.prompt-bar:focus-within {
+    border-color: #3a3a3a;
 }
 
-.input-pill:focus-within {
-  border-color: var(--border-medium);
-  box-shadow: 0 0 20px rgba(0, 0, 0, 0.06);
+[data-theme='light'] .prompt-bar {
+    background: #ffffff;
+    border-color: #e5e7eb;
+    box-shadow: 0 1px 6px rgba(0, 0, 0, 0.06);
 }
 
-.input-avatar {
-  font-size: 1.1rem;
-  opacity: 0.6;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 36px;
+[data-theme='light'] .prompt-bar:focus-within {
+    border-color: #d1d5db;
 }
 
-.input-pill textarea {
-  flex: 1;
-  padding: 10px 0;
-  background: transparent;
-  border: none;
-  font-family: inherit;
-  font-size: 15px;
-  color: var(--text-primary);
-  resize: none;
-  min-height: 40px;
-  max-height: 200px;
-  outline: none;
-  line-height: 1.5;
-  display: flex;
-  align-items: center;
+/* ── Text field ──────────────────────────────────────────── */
+.prompt-textarea {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: #e5e5e5;
+    font-size: 15px;
+    font-family: inherit;
+    line-height: 1.6;
+    resize: none;
+    min-height: 24px;
+    max-height: 200px;
+    padding: 0;
+    caret-color: #e5e5e5;
 }
 
-.input-pill textarea::placeholder {
-  color: var(--text-muted);
-  font-weight: 400;
+.prompt-textarea::placeholder {
+    color: #6b7280;
+    font-weight: 400;
 }
 
-.btn-send-pill {
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--text-muted);
-  color: var(--bg-input);
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.2s;
-  flex-shrink: 0;
-  opacity: 0.6;
+[data-theme='light'] .prompt-textarea       { color: #111827; }
+[data-theme='light'] .prompt-textarea::placeholder { color: #9ca3af; }
+
+/* keyboard focus ring (accessibility) */
+.prompt-textarea:focus-visible {
+    outline: none;
 }
 
-.btn-send-pill:hover:not(:disabled) {
-  color: var(--icon-hover);
-  opacity: 1;
+/* ── Generic icon button ─────────────────────────────────── */
+.prompt-icon-btn {
+    width: 36px;
+    height: 36px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: #9ca3af;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    padding: 0;
 }
 
-[data-theme='dark'] .btn-send-pill {
-  color: var(--icon-default);
-  background: transparent;
+.prompt-icon-btn:hover:not(:disabled) {
+    background: #2a2a2a;
+    color: #e5e5e5;
 }
 
-[data-theme='dark'] .btn-send-pill:hover:not(:disabled) {
-  color: var(--icon-active);
+.prompt-icon-btn:active:not(:disabled) {
+    transform: scale(0.96);
 }
 
-.btn-send-pill:active:not(:disabled) {
-  transform: scale(0.95);
+.prompt-icon-btn:focus-visible {
+    outline: 2px solid #10a37f;
+    outline-offset: 2px;
 }
 
-.btn-send-pill:disabled {
-  background: #f3f4f6;
-  color: #d1d5db;
-  cursor: not-allowed;
+.prompt-icon-btn:disabled {
+    color: #52525b;
+    cursor: not-allowed;
 }
 
-.btn-send-pill svg {
-  width: 16px;
-  height: 16px;
-  stroke-width: 3;
+[data-theme='light'] .prompt-icon-btn:hover:not(:disabled) {
+    background: #f0f0f0;
+    color: #374151;
+}
+
+/* ── Send button ─────────────────────────────────────────── */
+.prompt-send-btn {
+    width: 36px;
+    height: 36px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: #9ca3af;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    padding: 0;
+    opacity: 0.7;
+}
+
+/* active = has text */
+.prompt-send-btn.active {
+    color: #9ca3af;
+    opacity: 1;
+}
+
+.prompt-send-btn:hover:not(:disabled) {
+    background: #2a2a2a;
+    color: #ffffff;
+    opacity: 1;
+}
+
+.prompt-send-btn:active:not(:disabled) {
+    transform: scale(0.96);
+}
+
+.prompt-send-btn:focus-visible {
+    outline: 2px solid #10a37f;
+    outline-offset: 2px;
+}
+
+.prompt-send-btn:disabled {
+    color: #52525b;
+    cursor: not-allowed;
+    opacity: 0.4;
+}
+
+[data-theme='light'] .prompt-send-btn.active { color: #9ca3af; }
+[data-theme='light'] .prompt-send-btn:hover:not(:disabled) {
+    background: #f0f0f0;
+    color: #111827;
 }

@@ -1,13 +1,15 @@
 import { useState, useRef, useEffect } from 'react';
+import { Paperclip, Plus, Mic, ArrowUp } from 'lucide-react';
 import './ChatInput.css';
 
 function ChatInput({ onSend, disabled }) {
     const [message, setMessage] = useState('');
     const textareaRef = useRef(null);
+    const hasText = message.trim().length > 0;
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        if (message.trim() && !disabled) {
+        if (hasText && !disabled) {
             onSend(message);
             setMessage('');
             if (textareaRef.current) {
@@ -31,22 +33,42 @@ function ChatInput({ onSend, disabled }) {
     }, [message]);
 
     return (
-        <form className="chat-input-container" onSubmit={handleSubmit}>
-            <div className="input-pill">
-                <div className="input-avatar">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-                </div>
+        <form className="chat-input-form" onSubmit={handleSubmit}>
+            <div className={`prompt-bar ${hasText ? 'has-text' : ''}`}>
+
+                {/* Left icons */}
+                <button type="button" className="prompt-icon-btn" title="Attach file" tabIndex={0}>
+                    <Paperclip size={20} strokeWidth={1.8} />
+                </button>
+                <button type="button" className="prompt-icon-btn" title="Tools" tabIndex={0}>
+                    <Plus size={20} strokeWidth={1.8} />
+                </button>
+
+                {/* Text input */}
                 <textarea
                     ref={textareaRef}
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
                     onKeyDown={handleKeyDown}
-                    placeholder="Send a message"
+                    placeholder="Ask anything"
                     disabled={disabled}
                     rows="1"
+                    className="prompt-textarea"
                 />
-                <button type="submit" className="btn-send-pill" disabled={disabled || !message.trim()}>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+
+                {/* Right icons */}
+                <button type="button" className="prompt-icon-btn" title="Voice input" tabIndex={0}>
+                    <Mic size={20} strokeWidth={1.8} />
+                </button>
+
+                <button
+                    type="submit"
+                    className={`prompt-send-btn ${hasText ? 'active' : ''}`}
+                    disabled={disabled || !hasText}
+                    title="Send message"
+                    tabIndex={0}
+                >
+                    <ArrowUp size={18} strokeWidth={2.5} />
                 </button>
             </div>
         </form>
