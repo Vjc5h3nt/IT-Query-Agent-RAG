@@ -3,14 +3,26 @@
  */
 import axios from 'axios';
 
-const API_BASE_URL = 'http://localhost:8000';
+const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
 const api = axios.create({
     baseURL: API_BASE_URL,
     headers: {
         'Content-Type': 'application/json',
     },
+    timeout: 120000, // 2 minute timeout for LLM calls
 });
+
+// Response interceptor for consistent error handling
+api.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        if (error.response?.status === 401) {
+            console.error('AWS credentials expired or invalid');
+        }
+        return Promise.reject(error);
+    }
+);
 
 // Session endpoints
 export const createSession = async (name = null) => {
@@ -44,13 +56,23 @@ export const deleteAllSessions = async () => {
 };
 
 // Chat endpoints
-export const sendMessage = async (sessionId, message, useKnowledgeBase = true, useReranking = false) => {
-    const response = await api.post('/chat', {
+export const sendMessage = async (sessionId, message, useKnowledgeBase = true, useReranking = false, contextMessages = null) => {
+    const payload = {
         session_id: sessionId,
         message: message,
         use_knowledge_base: useKnowledgeBase,
         use_reranking: useReranking
-    });
+    };
+    if (contextMessages !== null) {
+        payload.context_messages = contextMessages;
+    }
+    const response = await api.post('/chat', payload);
+    return response.data;
+};
+
+// Settings endpoints
+export const getServerSettings = async () => {
+    const response = await api.get('/settings');
     return response.data;
 };
 

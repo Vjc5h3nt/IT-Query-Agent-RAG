@@ -40,6 +40,7 @@ class ChatRequest(BaseModel):
     message: str = Field(..., min_length=1, description="User message")
     use_knowledge_base: bool = Field(True, description="Whether to use the vector knowledge base")
     use_reranking: bool = Field(False, description="Whether to use Cross-Encoder reranking")
+    context_messages: Optional[int] = Field(None, ge=1, le=25, description="Number of conversation turns to include (1-25). Defaults to server setting.")
 
 
 class RerankResult(BaseModel):

@@ -5,8 +5,8 @@ from app.models import IngestionResponse, IngestionStatus, IngestionRequest
 from services.document_processor import document_processor
 from services.vector_store import vector_store, jira_vector_store
 from database.session_db import session_db
-import uuid
 import logging
+import uuid
 
 logger = logging.getLogger(__name__)
 
@@ -27,22 +27,15 @@ async def ingest_documents(request: IngestionRequest = None):
     """
     try:
         from app.config import settings
-        
-        # Update app settings if provided
+
+        # Log settings overrides (applied per-request, not mutating global state)
         if request:
             if request.top_k_stage1 is not None:
-                settings.top_k_stage1 = request.top_k_stage1
-                logger.info(f"Updated top_k_stage1 to {request.top_k_stage1}")
-            
+                logger.info(f"Ingestion using top_k_stage1={request.top_k_stage1}")
             if request.rerank_top_k is not None:
-                settings.rerank_top_k = request.rerank_top_k
-                # Also update top_k_results so it applies to the generation phase
-                settings.top_k_results = request.rerank_top_k
-                logger.info(f"Updated rerank_top_k to {request.rerank_top_k}")
-            
+                logger.info(f"Ingestion using rerank_top_k={request.rerank_top_k}")
             if request.max_memory_messages is not None:
-                settings.max_memory_messages = request.max_memory_messages
-                logger.info(f"Updated max_memory_messages to {request.max_memory_messages}")
+                logger.info(f"Ingestion using max_memory_messages={request.max_memory_messages}")
 
         # Get files that need processing
         files_to_process, skipped_files = document_processor.get_files_to_process()
@@ -90,15 +83,10 @@ async def ingest_documents(request: IngestionRequest = None):
                 logger.info(f"Added {total_chunks} chunks to vector store")
             
             # Update document metadata in database
+            from pathlib import Path
             for file_path in files_to_process:
-                chunk_count = file_chunk_counts.get(
-                    document_processor.calculate_file_hash(file_path),
-                    0
-                )
-                from pathlib import Path
                 filename = Path(file_path).name
                 chunk_count = file_chunk_counts.get(filename, 0)
-                
                 document_processor.update_document_metadata(file_path, chunk_count)
                 processed_filenames.append(filename)
         

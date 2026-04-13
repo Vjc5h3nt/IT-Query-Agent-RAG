@@ -512,6 +512,7 @@
 }
 
 .btn-tool:hover             { background: #f0f0f0; color: #374151; }
+.btn-tool.active            { background: var(--bg-hover); color: var(--text-primary); }
 .btn-tool.danger-hover:hover { background: rgba(239,68,68,0.06); color: #ef4444; }
 
 .btn-tool-label {
@@ -522,6 +523,7 @@
 
 [data-theme='dark'] .btn-tool         { color: #9ca3af; }
 [data-theme='dark'] .btn-tool:hover   { background: #1f1f1f; color: #e5e5e5; }
+[data-theme='dark'] .btn-tool.active  { background: #1f1f1f; color: #e5e5e5; }
 [data-theme='dark'] .btn-tool.danger-hover:hover {
     background: rgba(239,68,68,0.08);
     color: #f87171;
@@ -865,12 +867,57 @@
 [data-theme='dark'] .detail-category { color: #71717a; }
 [data-theme='dark'] .detail-value    { color: #e5e5e5; }
 
-/* ── Responsive ───────────────────────────────────────────── */
+/* ── Responsive (mobile) ─────────────────────────────────── */
 @media (max-width: 768px) {
     .sidebar-container {
-        position: absolute;
-        z-index: 30;
+        position: fixed;
+        top: 0;
+        left: 0;
+        z-index: 50;
         height: 100dvh;
-        box-shadow: 4px 0 24px rgba(0,0,0,0.2);
+        box-shadow: 4px 0 24px rgba(0,0,0,0.15);
+        transition: width 0.2s ease, min-width 0.2s ease, transform 0.2s ease;
+    }
+
+    /* Collapsed on mobile: slide completely off-screen */
+    .sidebar-container.collapsed {
+        width: 0;
+        min-width: 0;
+        transform: translateX(-60px);
+        box-shadow: none;
+        overflow: hidden;
+    }
+
+    /* When expanded on mobile, show full-width sidebar */
+    .sidebar-container:not(.collapsed) {
+        width: 280px;
+        min-width: 280px;
+    }
+
+    [data-theme='dark'] .sidebar-container {
+        box-shadow: 4px 0 24px rgba(0,0,0,0.4);
+    }
+
+    [data-theme='dark'] .sidebar-container.collapsed {
+        box-shadow: none;
+    }
+}
+
+/* ── Mobile chat header: show hamburger when sidebar hidden ── */
+@media (max-width: 768px) {
+    .chat-header {
+        padding-left: 16px;
+    }
+
+    .input-wrapper {
+        padding: 10px 16px 14px;
+    }
+
+    .messages-container {
+        padding: 0 16px;
+    }
+
+    .session-title {
+        max-width: 200px;
     }
 }

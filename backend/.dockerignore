@@ -1,0 +1,14 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+.env
+*.db
+*.sqlite
+storage/
+data/
+.git/
+.claude/
+*.egg-info/
+dist/
+build/

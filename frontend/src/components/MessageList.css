@@ -308,49 +308,51 @@
     color: #a1a1aa;
 }
 
-/* Metrics chip */
+/* Metrics chip — neutral, matching sources/audit chips */
 .metrics-chip {
     display: inline-flex;
     align-items: center;
     gap: 5px;
     padding: 4px 10px;
     border-radius: 20px;
-    border: 1px solid rgba(99,102,241,0.3);
-    background: rgba(99,102,241,0.06);
-    color: #6366f1;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-muted);
     font-size: 11.5px;
-    font-weight: 600;
+    font-weight: 500;
     cursor: pointer;
     transition: all 0.15s ease;
     font-family: inherit;
 }
 
 .metrics-chip:hover,
-.metrics-chip.active { background: rgba(99,102,241,0.14); border-color: rgba(99,102,241,0.5); }
-
-[data-theme='dark'] .metrics-chip {
-    border-color: rgba(165,180,252,0.25);
-    background: rgba(99,102,241,0.1);
-    color: #a5b4fc;
+.metrics-chip.active {
+    background: var(--bg-hover);
+    color: var(--text-secondary);
+    border-color: var(--text-muted);
 }
 
-[data-theme='dark'] .metrics-chip:hover { background: rgba(99,102,241,0.2); }
+[data-theme='dark'] .metrics-chip:hover,
+[data-theme='dark'] .metrics-chip.active {
+    background: #1f1f1f;
+    border-color: #3a3a3a;
+    color: #a1a1aa;
+}
 
 /* ── Metrics popup ───────────────────────────────────────── */
 .metrics-popup {
     margin-top: 8px;
     border-radius: 12px;
-    border: 1px solid rgba(99,102,241,0.2);
-    background: #fff;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    border: 1px solid var(--border);
+    background: var(--bg-surface);
+    box-shadow: var(--shadow-md);
     overflow: hidden;
     animation: fadeIn 0.18s ease;
 }
 
 [data-theme='dark'] .metrics-popup {
     background: #1e1e1e;
-    border-color: rgba(165,180,252,0.15);
-    box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+    border-color: #2a2a2a;
 }
 
 .metrics-popup-header {
@@ -358,17 +360,17 @@
     align-items: center;
     justify-content: space-between;
     padding: 10px 14px 8px;
-    border-bottom: 1px solid rgba(99,102,241,0.12);
+    border-bottom: 1px solid var(--border);
     font-size: 12px;
     font-weight: 700;
     letter-spacing: 0.03em;
     text-transform: uppercase;
-    color: #6366f1;
+    color: var(--text-secondary);
 }
 
 [data-theme='dark'] .metrics-popup-header {
-    color: #a5b4fc;
-    border-bottom-color: rgba(165,180,252,0.12);
+    color: #d4d4d8;
+    border-bottom-color: #2a2a2a;
 }
 
 .metrics-close {
@@ -429,17 +431,17 @@
     font-variant-numeric: tabular-nums;
 }
 
-.metrics-value.highlight { color: #6366f1; font-size: 16px; }
+.metrics-value.highlight { color: var(--text-primary); font-size: 16px; }
 
 [data-theme='dark'] .metrics-value         { color: #e5e5e5; }
-[data-theme='dark'] .metrics-value.highlight { color: #a5b4fc; }
+[data-theme='dark'] .metrics-value.highlight { color: #e5e5e5; }
 
 .metrics-badge       { font-size: 11.5px; font-weight: 600; padding: 3px 10px; border-radius: 20px; }
-.badge-rag           { background: rgba(99,102,241,0.1); color: #6366f1; }
-.badge-casual        { background: rgba(16,185,129,0.1); color: #059669; }
+.badge-rag           { background: rgba(16,163,127,0.08); color: var(--color-accent); }
+.badge-casual        { background: rgba(16,185,129,0.08); color: #059669; }
 
-[data-theme='dark'] .badge-rag    { background: rgba(165,180,252,0.15); color: #a5b4fc; }
-[data-theme='dark'] .badge-casual { background: rgba(16,185,129,0.15); color: #6ee7b7; }
+[data-theme='dark'] .badge-rag    { background: rgba(16,163,127,0.12); color: #10a37f; }
+[data-theme='dark'] .badge-casual { background: rgba(16,185,129,0.12); color: #6ee7b7; }
 
 /* ── Sources expanded ────────────────────────────────────── */
 .sources-expanded {
@@ -518,10 +520,15 @@
 }
 
 .citation-badge:hover {
-    background: #10a37f;
-    color: #fff;
-    border-color: #10a37f;
-    transform: scale(1.12) translateY(-1px);
+    background: var(--bg-hover);
+    color: var(--text-secondary);
+    border-color: var(--text-muted);
+}
+
+[data-theme='dark'] .citation-badge:hover {
+    background: #2a2a2a;
+    color: #a1a1aa;
+    border-color: #3a3a3a;
 }
 
 /* ── Message footer ──────────────────────────────────────── */

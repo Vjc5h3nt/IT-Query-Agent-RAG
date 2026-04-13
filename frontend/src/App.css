@@ -1,6 +1,7 @@
 .app {
   display: flex;
   height: 100vh;
+  height: 100dvh;
   width: 100vw;
   overflow: hidden;
   background: var(--bg-app);
@@ -11,8 +12,10 @@
   display: flex;
   flex-direction: column;
   height: 100vh;
+  height: 100dvh;
   overflow: hidden;
   transition: all 0.2s ease;
+  min-width: 0;
 }
 
 /* ── Loading screen ─────────────────────────────────────────────────── */
@@ -44,4 +47,15 @@
   font-size: 14px;
   font-weight: 500;
   color: var(--text-muted);
+}
+
+/* ── Mobile: sidebar overlay + backdrop ─────────────────────────────── */
+@media (max-width: 768px) {
+  .app {
+    position: relative;
+  }
+
+  .main-content {
+    width: 100%;
+  }
 }

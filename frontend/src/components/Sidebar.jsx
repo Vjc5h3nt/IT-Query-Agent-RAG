@@ -4,14 +4,12 @@ import {
     Plus,
     Search,
     MessageSquare,
-    BookOpen,
-    Folder,
-    Trash2,
+    Settings,
     Moon,
     Sun,
     ChevronLeft,
-    ChevronRight,
     Pencil,
+    Trash2,
     Info,
     X,
     MoreHorizontal,
@@ -84,9 +82,6 @@ function Sidebar({
     onNewSession,
     onDeleteSession,
     onDeleteAllSessions,
-    onDeleteVectorStore,
-    onJiraIngest,
-    onIngest,
     searchQuery,
     onSearchChange,
     isCollapsed,
@@ -96,6 +91,8 @@ function Sidebar({
     userName,
     onUpdateUserName,
     onRenameSession,
+    activeView,
+    onOpenSettings,
 }) {
     const [isEditingName, setIsEditingName]     = useState(false);
     const [tempName, setTempName]               = useState(userName);
@@ -145,19 +142,6 @@ function Sidebar({
     }, []);
 
     const closeMenu = useCallback(() => setMenuAnchor(null), []);
-
-    /* ── Tool button (expanded + collapsed) ── */
-    const ToolBtn = ({ icon, label, onClick, className = '' }) =>
-        isCollapsed ? (
-            <Tooltip label={label}>
-                <button className={`btn-tool ${className}`} onClick={onClick}>{icon}</button>
-            </Tooltip>
-        ) : (
-            <button className={`btn-tool ${className}`} onClick={onClick}>
-                {icon}
-                <span className="btn-tool-label">{label}</span>
-            </button>
-        );
 
     return (
         <div className={`sidebar-container ${isCollapsed ? 'collapsed' : ''}`}>
@@ -284,12 +268,26 @@ function Sidebar({
                     </div>
                 )}
 
-                {/* ── Tools ── */}
+                {/* ── Settings ── */}
                 <div className="sidebar-tools">
-                    {!isCollapsed && <p className="section-label">Tools</p>}
-                    <ToolBtn icon={<BookOpen size={18} strokeWidth={2} />} label="Ingest Documents"    onClick={onIngest} />
-                    <ToolBtn icon={<Folder   size={18} strokeWidth={2} />} label="Ingest JIRA XML"     onClick={onJiraIngest} />
-                    <ToolBtn icon={<Trash2   size={18} strokeWidth={2} />} label="Manage Vector Stores" onClick={onDeleteVectorStore} className="danger-hover" />
+                    {isCollapsed ? (
+                        <Tooltip label="Settings">
+                            <button
+                                className={`btn-tool ${activeView === 'settings' ? 'active' : ''}`}
+                                onClick={onOpenSettings}
+                            >
+                                <Settings size={18} strokeWidth={2} />
+                            </button>
+                        </Tooltip>
+                    ) : (
+                        <button
+                            className={`btn-tool ${activeView === 'settings' ? 'active' : ''}`}
+                            onClick={onOpenSettings}
+                        >
+                            <Settings size={18} strokeWidth={2} />
+                            <span className="btn-tool-label">Settings</span>
+                        </button>
+                    )}
                 </div>
 
                 {/* ── Footer ── */}

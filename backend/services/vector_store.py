@@ -4,7 +4,6 @@ from chromadb.config import Settings as ChromaSettings
 from typing import List, Dict, Any, Optional, Set
 from app.config import settings
 from services.bedrock_client import bedrock_client
-import numpy as np
 import logging
 
 logger = logging.getLogger(__name__)
@@ -12,23 +11,12 @@ logger = logging.getLogger(__name__)
 
 class CustomEmbeddingFunction:
     """Custom embedding function using AWS Bedrock Titan."""
-    
+
     def __call__(self, input: List[str]) -> List[List[float]]:
         """Generate and L2-normalize embeddings for a list of texts."""
+        from services.embedding_helpers import normalize_embeddings
         raw = bedrock_client.generate_embeddings(input)
-        return _normalize_embeddings(raw)
-
-
-def _normalize_embeddings(embeddings: List[List[float]]) -> List[List[float]]:
-    """L2-normalize a list of embedding vectors in-place."""
-    normalized = []
-    for emb in embeddings:
-        arr = np.array(emb, dtype=np.float32)
-        norm = np.linalg.norm(arr)
-        if norm > 0:
-            arr = arr / norm
-        normalized.append(arr.tolist())
-    return normalized
+        return normalize_embeddings(raw)
 
 
 class VectorStore:
@@ -60,7 +48,7 @@ class VectorStore:
                 name=self._collection_name
             )
             logger.info(f"Loaded existing collection: {self._collection_name} ({self.collection.count()} documents)")
-        except:
+        except Exception:
             self.collection = self.client.create_collection(
                 name=self._collection_name,
                 metadata={"hnsw:space": "cosine", "description": f"RAG collection: {self._collection_name}"}

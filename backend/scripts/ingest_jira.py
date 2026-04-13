@@ -11,21 +11,19 @@ Pipeline:
 """
 import argparse
 import logging
-import sys
-import time
 import os
-from typing import List, Dict, Any
+import sys
+from typing import Any, Dict, List
 
 # Ensure backend/ is in the Python path when running as a script
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 
 from services.jira.jira_xml_ingestor import parse as parse_jira_xml
 from services.jira.vector_preparer import prepare_vectors
 from services.vector_store import vector_store
-from services.bedrock_client import bedrock_client
+from services.embedding_helpers import embed_with_retry, normalize_embeddings
 from database.session_db import session_db
 
-import numpy as np
 from tqdm import tqdm
 
 # ── Logging setup ──────────────────────────────────────────────────────
@@ -35,43 +33,6 @@ logging.basicConfig(
     handlers=[logging.StreamHandler(sys.stdout)],
 )
 logger = logging.getLogger("ingest_jira")
-
-# ── Retry settings for Bedrock throttling ─────────────────────────────
-_RETRY_DELAYS = [5, 10, 20]  # exponential backoff seconds
-
-
-def _embed_with_retry(texts: List[str]) -> List[List[float]]:
-    """
-    Call Bedrock embeddings with exponential backoff on ThrottlingException.
-    Retries up to 3 times (5s → 10s → 20s), then raises.
-    """
-    last_error = None
-    for attempt, delay in enumerate(_RETRY_DELAYS, start=1):
-        try:
-            return bedrock_client.generate_embeddings(texts)
-        except Exception as e:
-            if "ThrottlingException" in str(e) or "throttling" in str(e).lower():
-                logger.warning(
-                    f"Bedrock throttle on attempt {attempt}, sleeping {delay}s",
-                    extra={"attempt": attempt, "delay_s": delay},
-                )
-                time.sleep(delay)
-                last_error = e
-            else:
-                raise  # Non-throttle errors bubble up immediately
-    raise last_error  # type: ignore
-
-
-def _normalize_embeddings(embeddings: List[List[float]]) -> List[List[float]]:
-    """L2-normalize a list of embedding vectors."""
-    normalized = []
-    for emb in embeddings:
-        arr = np.array(emb, dtype=np.float32)
-        norm = np.linalg.norm(arr)
-        if norm > 0:
-            arr = arr / norm
-        normalized.append(arr.tolist())
-    return normalized
 
 
 def ingest(xml_path: str, batch_size: int = 100) -> None:
@@ -123,10 +84,10 @@ def ingest(xml_path: str, batch_size: int = 100) -> None:
 
             # 2. Embed with retry
             texts = [v["text"] for v in new_batch]
-            embeddings = _embed_with_retry(texts)
+            embeddings = embed_with_retry(texts)
 
             # 3. L2 normalize
-            embeddings = _normalize_embeddings(embeddings)
+            embeddings = normalize_embeddings(embeddings)
 
             # 4. Insert into Chroma
             vector_store.collection.add(

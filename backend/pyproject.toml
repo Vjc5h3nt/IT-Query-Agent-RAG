@@ -1,0 +1,38 @@
+[project]
+name = "it-query-agent-rag"
+version = "3.3.1"
+description = "Enterprise RAG system for IT knowledge management with hybrid search and cross-encoder reranking"
+readme = "../README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi[all]",
+    "uvicorn[standard]",
+    "boto3",
+    "chromadb",
+    "langchain",
+    "langchain-community",
+    "langchain-aws",
+    "langchain-text-splitters",
+    "langgraph",
+    "sqlalchemy",
+    "python-dotenv",
+    "pydantic",
+    "pydantic-settings",
+    "sentence-transformers",
+    "numpy",
+    "lxml",
+    "beautifulsoup4",
+    "opensearch-py>=2.3.0",
+    "tqdm",
+    "docling",
+]
+
+[project.scripts]
+ingest-jira = "scripts.ingest_jira:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["app", "services", "database"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

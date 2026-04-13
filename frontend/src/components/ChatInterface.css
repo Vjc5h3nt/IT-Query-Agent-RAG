@@ -57,76 +57,31 @@
     max-width: 400px;
 }
 
-/* ── KB Toggle ───────────────────────────────────────────── */
-.chat-actions {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.kb-toggle-btn {
-    position: relative;
-    display: flex;
+/* ── Mobile menu button (hidden on desktop) ─────────────── */
+.mobile-menu-btn {
+    display: none;
     align-items: center;
     justify-content: center;
-    padding: 0;
+    width: 36px;
+    height: 36px;
+    border: none;
     background: transparent;
-    border: 1px solid var(--border);
     border-radius: 8px;
     color: var(--text-muted);
     cursor: pointer;
     transition: all 0.15s ease;
-    width: 36px;
-    height: 36px;
+    flex-shrink: 0;
 }
 
-.kb-toggle-btn:hover {
-    color: var(--text-primary);
+.mobile-menu-btn:hover {
     background: var(--bg-hover);
-    border-color: var(--text-muted);
+    color: var(--text-primary);
 }
 
-.kb-label-text {
-    position: absolute;
-    top: calc(100% + 8px);
-    left: 50%;
-    transform: translateX(-50%);
-    font-size: 11px;
-    font-weight: 500;
-    background: #111827;
-    color: #fff;
-    padding: 4px 8px;
-    border-radius: 6px;
-    white-space: nowrap;
-    opacity: 0;
-    transition: opacity 0.15s ease;
-    pointer-events: none;
-    z-index: 10;
-}
-
-[data-theme='dark'] .kb-label-text { background: #e5e5e5; color: #111827; }
-
-.kb-toggle-btn:hover .kb-label-text { opacity: 1; }
-
-.kb-toggle-btn.active {
-    color: #10a37f;
-    border-color: rgba(16,163,127,0.4);
-    background: rgba(16,163,127,0.08);
-}
-
-[data-theme='dark'] .kb-toggle-btn {
-    border-color: #2a2a2a;
-}
-
-[data-theme='dark'] .kb-toggle-btn:hover {
-    background: #1f1f1f;
-    border-color: #3a3a3a;
-}
-
-[data-theme='dark'] .kb-toggle-btn.active {
-    color: #10a37f;
-    border-color: rgba(16,163,127,0.4);
-    background: rgba(16,163,127,0.1);
+@media (max-width: 768px) {
+    .mobile-menu-btn {
+        display: flex;
+    }
 }
 
 /* ── Input wrapper ───────────────────────────────────────── */

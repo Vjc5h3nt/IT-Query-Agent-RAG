@@ -155,7 +155,7 @@ class DocumentProcessor:
         all_metadatas = []
         file_chunk_counts = {}
         
-        print(f"Starting processing of {len(file_paths)} files...")
+        logger.info(f"Starting processing of {len(file_paths)} files...")
         
         for file_path in tqdm(file_paths, desc="Processing Files", unit="file"):
             filename = Path(file_path).name

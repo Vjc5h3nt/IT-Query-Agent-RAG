@@ -4,6 +4,7 @@
 import { useState, useEffect } from 'react';
 import Sidebar from './components/Sidebar';
 import ChatInterface from './components/ChatInterface';
+import SettingsPage from './components/SettingsPage';
 import IngestionModal from './components/IngestionModal';
 import DeleteVectorModal from './components/DeleteVectorModal';
 import JiraIngestModal from './components/JiraIngestModal';
@@ -15,14 +16,17 @@ function App() {
   const [currentSession, setCurrentSession] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // View state: 'chat' or 'settings'
+  const [activeView, setActiveView] = useState('chat');
+
   // Ingestion state
   const [ingestionModalOpen, setIngestionModalOpen] = useState(false);
-  const [ingestionStatus, setIngestionStatus] = useState(null); // 'processing', 'complete', 'error'
+  const [ingestionStatus, setIngestionStatus] = useState(null);
   const [ingestionStats, setIngestionStats] = useState(null);
 
   // Vector Store Deletion state
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-  const [deleteStatus, setDeleteStatus] = useState('idle'); // 'idle', 'deleting', 'success', 'error'
+  const [deleteStatus, setDeleteStatus] = useState('idle');
 
   // JIRA ingestion state
   const [jiraModalOpen, setJiraModalOpen] = useState(false);
@@ -50,15 +54,32 @@ function App() {
     setTheme(prev => prev === 'light' ? 'dark' : 'light');
   };
 
-  // Load sessions on mount
+  // Chat preferences
+  const [useReranking, setUseReranking] = useState(false);
+  const [contextMessages, setContextMessages] = useState(() => {
+    const saved = localStorage.getItem('contextMessages');
+    return saved ? parseInt(saved, 10) : 5;
+  });
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => window.innerWidth < 768);
+  const [emptySessionId, setEmptySessionId] = useState(null);
+
+  // Auto-collapse sidebar on mobile resize
   useEffect(() => {
-    loadSessions();
+    const mq = window.matchMedia('(max-width: 768px)');
+    const handler = (e) => setIsSidebarCollapsed(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
   }, []);
+
+  useEffect(() => {
+    localStorage.setItem('contextMessages', contextMessages.toString());
+  }, [contextMessages]);
 
   const loadSessions = async () => {
     try {
       const data = await api.getSessions();
-      setSessions(data);
+      setSessions(Array.isArray(data) ? data : []);
       setLoading(false);
     } catch (error) {
       console.error('Error loading sessions:', error);
@@ -66,14 +87,20 @@ function App() {
     }
   };
 
+  // Load sessions on mount
+  useEffect(() => {
+    loadSessions();
+  }, []);
+
   const handleNewSession = async () => {
-    // If a tracked empty session still exists in the list, navigate to it
+    // Switch to chat view when creating a new session
+    setActiveView('chat');
+
     if (emptySessionId && sessions.some((s) => s.id === emptySessionId)) {
       await handleSelectSession(emptySessionId);
       return;
     }
 
-    // If the current session is already empty, stay on it
     if (currentSession && (currentSession.messages?.length ?? 0) === 0) {
       return;
     }
@@ -92,6 +119,9 @@ function App() {
   };
 
   const handleSelectSession = async (sessionId) => {
+    setActiveView('chat');
+    // Auto-collapse sidebar on mobile after selection
+    if (window.innerWidth < 768) setIsSidebarCollapsed(true);
     try {
       const sessionDetail = await api.getSession(sessionId);
       setCurrentSession(sessionDetail);
@@ -133,26 +163,22 @@ function App() {
     }
   };
 
-  // Knowledge Base state
-  const [useKnowledgeBase, setUseKnowledgeBase] = useState(true);
-  const [useReranking, setUseReranking] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-  const [emptySessionId, setEmptySessionId] = useState(null);
-
   const handleSendMessage = async (message) => {
     if (!currentSession) return;
 
-    // Session now has a message — it's no longer empty
     if (currentSession.id === emptySessionId) {
       setEmptySessionId(null);
     }
 
-    const response = await api.sendMessage(currentSession.id, message, useKnowledgeBase, useReranking);
+    const response = await api.sendMessage(
+      currentSession.id,
+      message,
+      true,
+      useReranking,
+      contextMessages
+    );
 
-    // Reload sessions to update "updated_at"
     loadSessions();
-
     return response;
   };
 
@@ -174,20 +200,9 @@ function App() {
     setDeleteStatus('idle');
   };
 
-  const confirmDeleteVectorStore = async () => {
-    setDeleteStatus('deleting');
-    try {
-      await api.deleteVectorStore();
-      setDeleteStatus('success');
-    } catch (error) {
-      console.error('Error deleting vector store:', error);
-      setDeleteStatus('error');
-    }
-  };
-
   const handleOpenIngestModal = () => {
     setIngestionModalOpen(true);
-    setIngestionStatus(null); // 'null' shows the selection UI
+    setIngestionStatus(null);
     setIngestionStats(null);
   };
 
@@ -202,7 +217,6 @@ function App() {
       max_memory_messages: 12
     };
 
-    // Ensure reranking is enabled in UI
     setUseReranking(true);
 
     try {
@@ -217,13 +231,12 @@ function App() {
   };
 
   const closeIngestionModal = () => {
-    if (ingestionStatus === 'processing') return; // Prevent closing while processing
+    if (ingestionStatus === 'processing') return;
     setIngestionModalOpen(false);
     setIngestionStatus(null);
     setIngestionStats(null);
   };
 
-  // Filter sessions based on search query
   const filteredSessions = sessions.filter(session =>
     session.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -249,9 +262,6 @@ function App() {
         onDeleteSession={handleDeleteSession}
         onRenameSession={handleRenameSession}
         onDeleteAllSessions={handleDeleteAllSessions}
-        onDeleteVectorStore={handleDeleteVectorStore}
-        onJiraIngest={() => setJiraModalOpen(true)}
-        onIngest={handleOpenIngestModal}
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
         isCollapsed={isSidebarCollapsed}
@@ -260,15 +270,30 @@ function App() {
         onToggleTheme={toggleTheme}
         userName={userName}
         onUpdateUserName={setUserName}
+        activeView={activeView}
+        onOpenSettings={() => setActiveView('settings')}
       />
       <div className="main-content">
-        <ChatInterface
-          session={currentSession}
-          onSendMessage={handleSendMessage}
-          useKnowledgeBase={useKnowledgeBase}
-          onToggleKnowledgeBase={() => setUseKnowledgeBase(!useKnowledgeBase)}
-          userName={userName}
-        />
+        {activeView === 'settings' ? (
+          <SettingsPage
+            onIngest={handleOpenIngestModal}
+            onJiraIngest={() => setJiraModalOpen(true)}
+            onDeleteVectorStore={handleDeleteVectorStore}
+            useReranking={useReranking}
+            onToggleReranking={() => setUseReranking(!useReranking)}
+            contextMessages={contextMessages}
+            onContextMessagesChange={setContextMessages}
+            onBackToChat={() => setActiveView('chat')}
+            onOpenSidebar={isSidebarCollapsed ? () => setIsSidebarCollapsed(false) : undefined}
+          />
+        ) : (
+          <ChatInterface
+            session={currentSession}
+            onSendMessage={handleSendMessage}
+            userName={userName}
+            onOpenSidebar={isSidebarCollapsed ? () => setIsSidebarCollapsed(false) : undefined}
+          />
+        )}
       </div>
 
       <IngestionModal

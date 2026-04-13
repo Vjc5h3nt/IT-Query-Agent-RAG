@@ -1,7 +1,7 @@
 import React, { useState, useRef, useCallback } from 'react';
 import './JiraIngestModal.css';
 
-const API_BASE = 'http://localhost:8000';
+const API_BASE = import.meta.env.VITE_API_URL || '';
 
 function JiraIngestModal({ isOpen, onClose }) {
     // phase: idle | uploading | extracting | extracted | cleaning | cleaned | indexing | complete | error
@@ -149,7 +149,7 @@ function JiraIngestModal({ isOpen, onClose }) {
                                 setPhase('error');
                                 setErrorMsg(data.error || 'Unknown error during indexing');
                             }
-                        } catch (_) { }
+                        } catch { /* ignore non-JSON SSE lines */ }
                     }
                 }
             }

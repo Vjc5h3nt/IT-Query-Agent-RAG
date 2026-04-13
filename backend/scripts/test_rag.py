@@ -1,7 +1,7 @@
 
 import sys
 import os
-sys.path.append(os.path.join(os.getcwd(), 'backend'))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 
 from app.config import settings
 from services.rag_engine import rag_engine

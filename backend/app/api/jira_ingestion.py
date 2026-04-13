@@ -15,11 +15,13 @@ from fastapi import APIRouter, File, HTTPException, UploadFile, BackgroundTasks
 from fastapi.responses import StreamingResponse, FileResponse
 from pydantic import BaseModel
 
+from app.config import settings
+
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/ingest/jira", tags=["jira-ingestion"])
 
-TEMP_DIR = os.path.join(os.path.dirname(__file__), "../../../storage/temp")
+TEMP_DIR = os.path.join(settings.get_absolute_path(settings.storage_folder), "temp")
 os.makedirs(TEMP_DIR, exist_ok=True)
 
 
@@ -147,38 +149,11 @@ async def index_data(session_id: str, background_tasks: BackgroundTasks, batch_s
 
 async def _run_indexing_streaming(session_id: str, jsonl_path: str, batch_size: int, bg_tasks: BackgroundTasks) -> AsyncGenerator[str, None]:
     """Stream indexing progress."""
-    import numpy as np
-    import time
     from services.jira.vector_preparer import prepare_vectors
     from services.vector_store import jira_vector_store as vector_store
     from services.bm25_store import bm25_store
-    from services.bedrock_client import bedrock_client
+    from services.embedding_helpers import embed_with_retry, normalize_embeddings
     from database.session_db import session_db
-
-    _RETRY_DELAYS = [5, 10, 20]
-
-    def _embed_with_retry(texts):
-        last_error = None
-        for delay in _RETRY_DELAYS:
-            try:
-                return bedrock_client.generate_embeddings(texts)
-            except Exception as e:
-                if "ThrottlingException" in str(e) or "throttling" in str(e).lower():
-                    time.sleep(delay)
-                    last_error = e
-                else:
-                    raise
-        raise last_error
-
-    def _normalize(embeddings):
-        out = []
-        for emb in embeddings:
-            arr = np.array(emb, dtype=np.float32)
-            norm = np.linalg.norm(arr)
-            if norm > 0:
-                arr = arr / norm
-            out.append(arr.tolist())
-        return out
 
     stats = {
         "job_id": session_id,
@@ -228,9 +203,9 @@ async def _run_indexing_streaming(session_id: str, jsonl_path: str, batch_size: 
 
                         if new_batch:
                             embeddings = await asyncio.get_event_loop().run_in_executor(
-                                None, _embed_with_retry, [v["text"] for v in new_batch]
+                                None, embed_with_retry, [v["text"] for v in new_batch]
                             )
-                            embeddings = _normalize(embeddings)
+                            embeddings = normalize_embeddings(embeddings)
                             vector_store.collection.add(
                                 ids=[v["id"] for v in new_batch],
                                 documents=[v["text"] for v in new_batch],
@@ -270,9 +245,9 @@ async def _run_indexing_streaming(session_id: str, jsonl_path: str, batch_size: 
 
                 if new_batch:
                     embeddings = await asyncio.get_event_loop().run_in_executor(
-                        None, _embed_with_retry, [v["text"] for v in new_batch]
+                        None, embed_with_retry, [v["text"] for v in new_batch]
                     )
-                    embeddings = _normalize(embeddings)
+                    embeddings = normalize_embeddings(embeddings)
                     vector_store.collection.add(
                         ids=[v["id"] for v in new_batch],
                         documents=[v["text"] for v in new_batch],

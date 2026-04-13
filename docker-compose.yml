@@ -1,19 +1,58 @@
 services:
+  # ── Backend (FastAPI + RAG Engine) ──────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: rag_backend
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./backend/.env
+    environment:
+      - OPENSEARCH_URL=http://opensearch:9200
+      - CORS_ORIGINS=http://localhost,http://localhost:80,http://localhost:5173
+    volumes:
+      - app_data:/app/data
+      - app_storage:/app/storage
+    depends_on:
+      opensearch:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8000/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # ── Frontend (React + Nginx) ────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: rag_frontend
+    ports:
+      - "80:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # ── OpenSearch (BM25 Index) ─────────────────────────────────────────
   opensearch:
     image: opensearchproject/opensearch:2.13.0
-    container_name: jira_opensearch
+    container_name: rag_opensearch
     environment:
       - discovery.type=single-node
-      - OPENSEARCH_INITIAL_ADMIN_PASSWORD=R@g3Secure#2024
+      - OPENSEARCH_INITIAL_ADMIN_PASSWORD=${OPENSEARCH_PASSWORD:-R@g3Secure#2024}
       - plugins.security.disabled=true
       - OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m
     ports:
       - "9200:9200"
-      - "9600:9600"
     volumes:
       - opensearch_data:/usr/share/opensearch/data
     healthcheck:
-      test: [ "CMD-SHELL", "curl -sf http://localhost:9200/_cluster/health || exit 1" ]
+      test: ["CMD-SHELL", "curl -sf http://localhost:9200/_cluster/health || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -24,10 +63,14 @@ services:
       nofile:
         soft: 65536
         hard: 65536
+    restart: unless-stopped
 
+  # ── OpenSearch Dashboards (optional, for debugging) ─────────────────
   opensearch-dashboards:
     image: opensearchproject/opensearch-dashboards:2.13.0
-    container_name: jira_opensearch_dashboards
+    container_name: rag_opensearch_dashboards
+    profiles:
+      - debug
     ports:
       - "5601:5601"
     environment:
@@ -39,4 +82,8 @@ services:
 
 volumes:
   opensearch_data:
+    driver: local
+  app_data:
+    driver: local
+  app_storage:
     driver: local

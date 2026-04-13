@@ -1,8 +1,8 @@
 import sys
 import os
 
-# Add the current directory to the path so we can import our services
-sys.path.append(os.getcwd())
+# Ensure backend/ is in the Python path when running as a script
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 
 from services.vector_store import vector_store
 from database.session_db import session_db, DocumentMetadata

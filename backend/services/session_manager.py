@@ -1,8 +1,10 @@
 """Session manager with simple rolling 5-message memory."""
-from typing import Dict, List, Optional
-from database.session_db import session_db
-from app.config import settings
+import json
 import logging
+from typing import Dict, List, Optional
+
+from app.config import settings
+from database.session_db import session_db
 
 logger = logging.getLogger(__name__)
 
@@ -53,7 +55,6 @@ class SessionManager:
         """
         Get session details with messages.
         """
-        import json
         session = session_db.get_session_by_id(session_id)
         if not session:
             return None
@@ -156,7 +157,7 @@ class SessionManager:
             # Load existing messages from database (last 5 only)
             messages = session_db.get_session_messages(
                 session_id,
-                limit=settings.max_memory_messages * 2  # 5 user + 5 assistant = 10 total
+                limit=settings.max_memory_messages * 2  # user + assistant pairs  # 5 user + 5 assistant = 10 total
             )
             
             # Convert to simple dict format
@@ -172,22 +173,23 @@ class SessionManager:
         
         return self._memory_cache[session_id]
     
-    def get_conversation_history(self, session_id: str) -> List[Dict[str, str]]:
+    def get_conversation_history(self, session_id: str, context_messages: int = None) -> List[Dict[str, str]]:
         """
-        Get conversation history (last 5 messages).
-        
+        Get conversation history with configurable window.
+
         Args:
             session_id: Session ID
-            
+            context_messages: Number of conversation turns to include (overrides server default)
+
         Returns:
             List of message dictionaries with 'role' and 'content'
         """
         memory = self._get_or_create_memory(session_id)
-        
-        # Return last 5 conversation turns (10 messages total)
-        max_messages = settings.max_memory_messages * 2
+
+        turns = context_messages if context_messages is not None else settings.max_memory_messages
+        max_messages = turns * 2  # user + assistant pairs
         history_slice = memory[-max_messages:] if len(memory) > max_messages else memory
-        return [msg.copy() for msg in history_slice]  # Return a deep copy of the message dicts
+        return [msg.copy() for msg in history_slice]
     
     def add_user_message(self, session_id: str, message: str) -> None:
         """
@@ -208,7 +210,7 @@ class SessionManager:
         })
         
         # Trim to last 5 conversation turns (10 messages)
-        max_messages = settings.max_memory_messages * 2
+        max_messages = settings.max_memory_messages * 2  # user + assistant pairs
         if len(memory) > max_messages:
             self._memory_cache[session_id] = memory[-max_messages:]
         
@@ -229,7 +231,7 @@ class SessionManager:
         })
         
         # Trim to last 5 conversation turns (10 messages)
-        max_messages = settings.max_memory_messages * 2
+        max_messages = settings.max_memory_messages * 2  # user + assistant pairs
         if len(memory) > max_messages:
             self._memory_cache[session_id] = memory[-max_messages:]
         

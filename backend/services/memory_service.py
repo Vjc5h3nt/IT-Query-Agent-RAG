@@ -57,11 +57,15 @@ class MemoryService:
             return [item.value for item in items]
 
     def clear_session_memories(self, session_id: str) -> None:
-        """Clear all memories for a session - since it's InMemoryStore, this is handled by namespace."""
-        # Note: InMemoryStore doesn't have a direct 'delete_namespace', 
-        # but we can list and delete if needed. 
-        # For this implementation, we'll just let it be.
-        pass
+        """Clear all memories for a session by deleting each item in the namespace."""
+        namespace = (session_id, "context")
+        try:
+            items = self.store.search(namespace, limit=100)
+            for item in items:
+                self.store.delete(namespace, item.key)
+            logger.info(f"Cleared {len(items)} memories for session {session_id}")
+        except Exception as e:
+            logger.warning(f"Failed to clear memories for session {session_id}: {e}")
 
 # Global memory service instance
 memory_service = MemoryService()
