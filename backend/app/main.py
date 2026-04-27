@@ -89,6 +89,21 @@ async def get_settings():
     }
 
 
+@app.get("/metrics", tags=["observability"])
+async def get_metrics():
+    """Return basic runtime metrics including cache stats."""
+    from app import cache
+    from services.vector_store import vector_store, jira_vector_store
+    return {
+        "version": app.version,
+        "cache": cache.stats(),
+        "vector_store": {
+            "pdf_docs": vector_store.get_collection_count(),
+            "jira_docs": jira_vector_store.get_collection_count(),
+        },
+    }
+
+
 @app.get("/health", response_model=HealthResponse, tags=["health"])
 async def health_check():
     """Health check endpoint."""

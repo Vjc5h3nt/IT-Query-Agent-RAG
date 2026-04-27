@@ -114,3 +114,16 @@ class HealthResponse(BaseModel):
     status: str
     vector_store_initialized: bool
     database_initialized: bool
+
+
+class CacheStats(BaseModel):
+    """Cache statistics."""
+    total_keys: int
+    active_keys: int
+
+
+class MetricsResponse(BaseModel):
+    """Runtime metrics response."""
+    version: str
+    cache: CacheStats
+    vector_store: Dict[str, int]

@@ -51,6 +51,11 @@ class Settings(BaseSettings):
     llm_temperature: float = 0.1
     llm_max_tokens: int = 4096
 
+    # Response cache
+    cache_enabled: bool = True
+    cache_ttl_seconds: int = 300
+    cache_max_size: int = 500
+
     # Retry & Throttling
     retry_delays: List[int] = [5, 10, 20]
 
