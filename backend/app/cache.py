@@ -35,3 +35,4 @@ def stats() -> dict:
     active = sum(1 for v in _store.values() if now < v["expires"])
     return {"total_keys": len(_store), "active_keys": active}
 # Cache module
+# fmt
