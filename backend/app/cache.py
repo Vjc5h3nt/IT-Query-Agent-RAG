@@ -5,23 +5,25 @@ from typing import Any, Optional
 _store: dict = {}
 
 
-def get(key: str) -> Optional[Any]:
-    entry = _store.get(key)
+def get(key: str, namespace: str = "default") -> Optional[Any]:
+    namespaced_key = f"{namespace}:{key}"
+    entry = _store.get(namespaced_key)
     if entry and time.time() < entry["expires"]:
         return entry["value"]
     if entry:
-        del _store[key]
+        del _store[namespaced_key]
     return None
 
 
-def set(key: str, value: Any, ttl: int = 300):
+def set(key: str, value: Any, ttl: int = 300, namespace: str = "default"):
     from app.config import settings
+    namespaced_key = f"{namespace}:{key}"
     max_size = settings.cache_max_size
     if len(_store) >= max_size:
         # evict oldest
         oldest = min(_store, key=lambda k: _store[k]["expires"])
         del _store[oldest]
-    _store[key] = {"value": value, "expires": time.time() + ttl}
+    _store[namespaced_key] = {"value": value, "expires": time.time() + ttl}
 
 
 def invalidate(key: str):
