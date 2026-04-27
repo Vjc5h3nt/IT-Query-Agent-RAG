@@ -85,3 +85,4 @@ settings = Settings()
 os.makedirs(settings.get_absolute_path(settings.data_folder), exist_ok=True)
 os.makedirs(settings.get_absolute_path(settings.storage_folder), exist_ok=True)
 os.makedirs(settings.get_absolute_path(settings.chroma_db_path), exist_ok=True)
+# v2
