@@ -127,3 +127,4 @@ class MetricsResponse(BaseModel):
     version: str
     cache: CacheStats
     vector_store: Dict[str, int]
+# updated
