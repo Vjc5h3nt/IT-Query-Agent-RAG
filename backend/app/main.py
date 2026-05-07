@@ -6,7 +6,7 @@ from fastapi.responses import FileResponse
 from contextlib import asynccontextmanager
 from app.config import settings
 from app.models import HealthResponse
-from app.api import chat, sessions, ingestion, jira_ingestion
+from app.api import chat, sessions, ingestion, jira_ingestion, admin
 import logging
 import os
 
@@ -58,6 +58,7 @@ app.include_router(chat.router)
 app.include_router(sessions.router)
 app.include_router(ingestion.router)
 app.include_router(jira_ingestion.router)
+app.include_router(admin.router)
 
 
 @app.get("/", tags=["root"])

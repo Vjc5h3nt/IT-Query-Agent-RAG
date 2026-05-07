@@ -161,7 +161,7 @@ docker compose --profile debug up
 cd backend
 uv sync
 cp .env.example .env    # Edit with your AWS credentials
-uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+uv run uvicorn app.main:app --reload --reload-include=".env" --host 0.0.0.0 --port 8000
 ```
 
 **Frontend** (requires [Bun](https://bun.sh/)):
