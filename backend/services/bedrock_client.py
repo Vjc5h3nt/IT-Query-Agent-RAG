@@ -101,6 +101,10 @@ class BedrockClient:
 
     def __init__(self):
         """Initialize Bedrock runtime client."""
+        self._build_client()
+
+    def _build_client(self) -> None:
+        """Build the boto3 client from current settings. Idempotent."""
         client_kwargs = {
             'service_name': 'bedrock-runtime',
             'region_name': settings.aws_region
@@ -115,6 +119,20 @@ class BedrockClient:
         self.model_id = settings.aws_bedrock_model_id
         self.embedding_model_id = settings.aws_bedrock_embedding_model_id
         logger.info(f"Initialized Bedrock client with model: {self.model_id}")
+
+    def refresh(self) -> None:
+        """Reload settings from .env and rebuild the boto3 client.
+
+        Why: AWS SSO session tokens in .env expire every few hours. Rebuilding
+        in-process avoids a full server restart when ops rotates credentials.
+        """
+        from app.config import Settings
+        reloaded = Settings()
+        # Mutate the shared settings object in place so other modules see new values
+        for field in reloaded.model_fields:
+            setattr(settings, field, getattr(reloaded, field))
+        self._build_client()
+        logger.info("BedrockClient credentials refreshed from environment")
 
     def generate_embedding(self, text: str) -> List[float]:
         """Generate embedding vector for given text using Amazon Titan."""

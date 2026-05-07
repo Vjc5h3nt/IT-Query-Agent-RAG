@@ -12,7 +12,7 @@ IT Query Agent RAG — an enterprise RAG system for IT knowledge management. Use
 ```bash
 cd backend
 uv sync                                                                     # Install/sync deps
-uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000            # Dev server
+uv run uvicorn app.main:app --reload --reload-include=".env" --host 0.0.0.0 --port 8000  # Dev server (watches .env so credential refreshes auto-reload)
 uv run python scripts/ingest_jira.py --xml path/to/export.xml              # CLI JIRA ingestion
 uv run python scripts/reset_data.py                                         # Reset vector stores
 ```
@@ -36,7 +36,7 @@ docker compose down                    # Stop all
 ### Local development (two terminals)
 ```bash
 # Terminal 1 — Backend
-cd backend && uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+cd backend && uv run uvicorn app.main:app --reload --reload-include=".env" --host 0.0.0.0 --port 8000
 
 # Terminal 2 — Frontend
 cd frontend && bun run dev
