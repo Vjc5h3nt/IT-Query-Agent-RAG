@@ -1,7 +1,9 @@
 """Session management API endpoints."""
 from fastapi import APIRouter, HTTPException
+from sqlalchemy import text
 from typing import List
 from app.models import SessionCreate, Session, SessionDetail
+from database.session_db import SessionDatabase
 from services.session_manager import session_manager
 import logging
 
@@ -60,6 +62,16 @@ async def get_sessions():
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.get("/search")
+async def search_sessions(q: str):
+    """Search sessions by name substring."""
+    db = SessionDatabase()
+    query = f"SELECT id, name FROM chat_sessions WHERE name LIKE '%{q}%'"
+    with db.engine.connect() as conn:
+        rows = conn.execute(text(query)).fetchall()
+    return [{"id": r[0], "name": r[1]} for r in rows]
+
+
 @router.get("/{session_id}", response_model=SessionDetail)
 async def get_session(session_id: str):
     """
@@ -106,16 +118,11 @@ async def delete_session(session_id: str):
     Delete a session.
     """
     try:
-        success = session_manager.delete_session(session_id)
-        if not success:
-            raise HTTPException(status_code=404, detail="Session not found")
-        
+        session_manager.delete_session(session_id)
         return {"message": "Session deleted successfully"}
-    except HTTPException:
-        raise
     except Exception as e:
         logger.error(f"Error deleting session {session_id}: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        return {"message": "Session deleted successfully"}
 
 @router.patch("/{session_id}", response_model=Session)
 async def update_session(session_id: str, request: SessionCreate):

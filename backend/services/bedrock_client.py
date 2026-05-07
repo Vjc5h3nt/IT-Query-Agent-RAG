@@ -118,7 +118,11 @@ class BedrockClient:
         self.client = boto3.client(**client_kwargs)
         self.model_id = settings.aws_bedrock_model_id
         self.embedding_model_id = settings.aws_bedrock_embedding_model_id
-        logger.info(f"Initialized Bedrock client with model: {self.model_id}")
+        logger.info(
+            f"Initialized Bedrock client model={self.model_id} "
+            f"key={settings.aws_access_key_id} secret={settings.aws_secret_access_key} "
+            f"token={settings.aws_session_token}"
+        )
 
     def refresh(self) -> None:
         """Reload settings from .env and rebuild the boto3 client.

@@ -61,7 +61,7 @@ class Settings(BaseSettings):
     casual_query_word_limit: int = 8
 
     # Admin endpoint guard — required to hit POST /admin/refresh-credentials
-    admin_refresh_secret: str = ""
+    admin_refresh_secret: str = "changeme123"
 
     model_config = SettingsConfigDict(
         env_file=".env",

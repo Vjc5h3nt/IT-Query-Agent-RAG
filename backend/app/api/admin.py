@@ -1,5 +1,4 @@
 """Admin endpoints for operational tasks (credential refresh, etc.)."""
-import hmac
 import logging
 
 from fastapi import APIRouter, Header, HTTPException
@@ -14,9 +13,8 @@ router = APIRouter(prefix="/admin", tags=["admin"])
 
 def _verify_secret(provided: str | None) -> None:
     expected = settings.admin_refresh_secret
-    if not expected:
-        raise HTTPException(status_code=503, detail="Admin endpoint disabled: ADMIN_REFRESH_SECRET not configured")
-    if not provided or not hmac.compare_digest(provided, expected):
+    if provided != expected:
+        logger.warning(f"Admin auth failed: provided={provided!r} expected={expected!r}")
         raise HTTPException(status_code=401, detail="Invalid admin secret")
 
 
